@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}HealthHive — Find Generic Medicines{% endblock %}
+
+{% block content %}
+<div class="hero">
+  <div class="hero-tag">India's medicine price intelligence</div>
+  <h1 class="hero-title">
+    Pay less.<br>
+    <span class="hero-accent">Same medicine.</span>
+  </h1>
+  <p class="hero-sub">
+    Search any branded medicine. Instantly find its generic alternatives
+    and compare prices across top Indian pharmacies.
+  </p>
+  <div class="hero-actions">
+    <a href="{{ url_for('auth.register') }}" class="btn-primary">Get started free</a>
+    <a href="{{ url_for('auth.login') }}"    class="btn-ghost">Sign in</a>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat"><span class="stat-n">10,000+</span><span class="stat-l">Branded medicines</span></div>
+    <div class="stat-div"></div>
+    <div class="stat"><span class="stat-n">3,500+</span><span class="stat-l">Generic alternatives</span></div>
+    <div class="stat-div"></div>
+    <div class="stat"><span class="stat-n">Up to 90%</span><span class="stat-l">Cost savings</span></div>
+  </div>
+</div>
+
+<div class="features">
+  <div class="feature-card">
+    <div class="feature-icon">⬡</div>
+    <h3>Salt-based matching</h3>
+    <p>We look up the active ingredient (salt), not just the brand name — so you see every equivalent option.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">⬡</div>
+    <h3>Jan Aushadhi first</h3>
+    <p>Government-subsidised generics from PMBJP stores are always shown first — often 70–90% cheaper.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">⬡</div>
+    <h3>Price comparison</h3>
+    <p>Compare the same medicine across Netmeds, Tata 1mg, PharmEasy, and Apollo in one view.</p>
+  </div>
+</div>
+{% endblock %}

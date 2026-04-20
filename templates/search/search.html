@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}
+  {% if result and result.found %}{{ result.medicine.brand_name }} — {% endif %}Search — HealthHive
+{% endblock %}
+
+{% block content %}
+<!-- ── Search bar ── -->
+<div class="search-page-header">
+  <form action="{{ url_for('search.search') }}" method="GET" class="search-page-form" autocomplete="off">
+    <div class="search-input-wrap">
+      {{ form.query(
+          id="page-search",
+          placeholder="Search medicine…",
+          class="search-input search-input--lg",
+          value=form.query.data or ''
+      ) }}
+      <div id="autocomplete-list2" class="autocomplete-list"></div>
+    </div>
+    <button type="submit" class="btn-primary">Search</button>
+  </form>
+</div>
+
+<!-- ── Results ── -->
+{% if result %}
+
+  {# ── Not found ── #}
+  {% if not result.found %}
+  <div class="result-wrap">
+    <div class="not-found">
+      <div class="not-found-icon">⊘</div>
+      <h2>No results for "{{ result.query }}"</h2>
+      <p>Try the generic salt name, or check spelling.</p>
+
+      {% if result.suggestions %}
+      <div class="suggestions">
+        <p class="suggestions-label">Did you mean?</p>
+        <div class="history-list">
+          {% for s in result.suggestions %}
+          <a href="?q={{ s.brand_name | urlencode }}" class="history-chip">{{ s.brand_name }}</a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Found ── #}
+  {% else %}
+  {% set m = result.medicine %}
+  {% set s = result.savings %}
+
+  <div class="result-wrap">
+
+    <!-- Medicine header card -->
+    <div class="med-header-card">
+      <div class="med-header-left">
+        <div class="med-category-tag">{{ m.category or 'Medicine' }}</div>
+        <h1 class="med-title">{{ m.brand_name }}</h1>
+        <p class="med-salt">{{ m.salt_composition }}</p>
+        <p class="med-mfr">by {{ m.manufacturer or 'Unknown' }}
+          {% if m.dosage_form %} · {{ m.dosage_form }}{% endif %}
+          {% if m.strength %} · {{ m.strength }}{% endif %}
+        </p>
+      </div>
+      {% if s %}
+      <div class="savings-badge">
+        <div class="savings-badge-label">Cheapest generic</div>
+        <div class="savings-badge-price">₹{{ '%.2f'|format(s.cheapest_mrp) }}</div>
+        <div class="savings-badge-sub">{{ s.cheapest.pack_size }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Other brands with same salt -->
+    {% if result.other_brands %}
+    <div class="also-sold-as">
+      <span class="also-label">Also sold as:</span>
+      {% for b in result.other_brands %}
+        <a href="?q={{ b.brand_name | urlencode }}" class="history-chip history-chip--sm">
+          {{ b.brand_name }}
+        </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Generic alternatives -->
+    <section class="result-section">
+      <div class="section-header">
+        <h2 class="section-title">Generic alternatives</h2>
+        <span class="section-count">{{ result.generics | length }} found</span>
+      </div>
+
+      {% if not result.generics %}
+        <p class="empty-state">No generics found in our database yet.</p>
+      {% else %}
+        <div class="generics-list">
+          {% for g in result.generics %}
+          <div class="generic-card {% if g.source == 'JanAushadhi' %}generic-card--ja{% endif %}">
+            <div class="generic-card-left">
+              {% if g.source == 'JanAushadhi' %}
+                <span class="source-badge source-badge--ja">Jan Aushadhi</span>
+              {% else %}
+                <span class="source-badge source-badge--cdsco">CDSCO</span>
+              {% endif %}
+              <div class="generic-name">{{ g.generic_name }}</div>
+              <div class="generic-meta">
+                {{ g.manufacturer }}
+                {% if g.pack_size %} · {{ g.pack_size }}{% endif %}
+                {% if g.jan_aushadhi_code %} · Code: {{ g.jan_aushadhi_code }}{% endif %}
+              </div>
+            </div>
+            <div class="generic-card-right">
+              <div class="generic-price">₹{{ '%.2f'|format(g.mrp) }}</div>
+              {% if s and s.cheapest_mrp %}
+                {% set saving_pct = ((s.cheapest_mrp - g.mrp|float) / s.cheapest_mrp * 100)|abs|round|int %}
+                {% if loop.first %}
+                  <div class="price-tag price-tag--best">Cheapest</div>
+                {% endif %}
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </section>
+
+    <!-- Jan Aushadhi info box -->
+    {% if s and s.ja_options %}
+    <div class="ja-info-box">
+      <strong>Jan Aushadhi stores</strong> are government-run outlets across India selling
+      CDSCO-approved generics at 50–90% less than branded prices.
+      Find your nearest store at <a href="https://janaushadhi.gov.in" target="_blank">janaushadhi.gov.in</a>.
+    </div>
+    {% endif %}
+
+  </div>
+  {% endif %}
+
+{% endif %}{# end if result #}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+initAutocomplete('page-search', 'autocomplete-list2', '{{ url_for("search.autocomplete") }}');
+</script>
+{% endblock %}

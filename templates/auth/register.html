@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Register — HealthHive{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h1 class="auth-title">Create account</h1>
+      <p class="auth-sub">Already have one? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+    </div>
+
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}  {# renders the hidden CSRF token field #}
+
+      <div class="field">
+        {{ form.username.label(class="field-label") }}
+        {{ form.username(class="field-input" + (" field-input--error" if form.username.errors else ""),
+                         placeholder="e.g. rahul_sharma") }}
+        {% for e in form.username.errors %}
+          <p class="field-error">{{ e }}</p>
+        {% endfor %}
+      </div>
+
+      <div class="field">
+        {{ form.email.label(class="field-label") }}
+        {{ form.email(class="field-input" + (" field-input--error" if form.email.errors else ""),
+                      placeholder="you@example.com") }}
+        {% for e in form.email.errors %}
+          <p class="field-error">{{ e }}</p>
+        {% endfor %}
+      </div>
+
+      <div class="field">
+        {{ form.password.label(class="field-label") }}
+        {{ form.password(class="field-input" + (" field-input--error" if form.password.errors else ""),
+                         placeholder="Min. 6 characters") }}
+        {% for e in form.password.errors %}
+          <p class="field-error">{{ e }}</p>
+        {% endfor %}
+      </div>
+
+      <div class="field">
+        {{ form.confirm.label(class="field-label") }}
+        {{ form.confirm(class="field-input" + (" field-input--error" if form.confirm.errors else ""),
+                        placeholder="Repeat password") }}
+        {% for e in form.confirm.errors %}
+          <p class="field-error">{{ e }}</p>
+        {% endfor %}
+      </div>
+
+      <button type="submit" class="btn-primary btn-full">Create Account</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

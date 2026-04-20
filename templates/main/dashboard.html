@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — HealthHive{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Welcome, {{ current_user.username }}</h1>
+    <p class="page-sub">Search a medicine to find generic alternatives and compare prices.</p>
+  </div>
+</div>
+
+<!-- Search bar on dashboard -->
+<div class="dash-search-wrap">
+  <form action="{{ url_for('search.search') }}" method="GET" class="dash-search-form" autocomplete="off">
+    <div class="search-input-wrap">
+      {{ form.query(
+          id="dash-search",
+          placeholder="Search medicine e.g. Crocin 500mg, Dolo, Augmentin…",
+          class="search-input"
+      ) }}
+      <div id="autocomplete-list" class="autocomplete-list"></div>
+    </div>
+    <button type="submit" class="btn-primary">Search</button>
+  </form>
+
+  {% if form.query.errors %}
+    {% for e in form.query.errors %}
+      <p class="field-error">{{ e }}</p>
+    {% endfor %}
+  {% endif %}
+</div>
+
+<!-- Recent searches -->
+{% if history %}
+<section class="recent-section">
+  <h2 class="section-title">Recent searches</h2>
+  <div class="history-list">
+    {% for h in history %}
+    <a href="{{ url_for('search.search') }}?q={{ h.query | urlencode }}" class="history-chip">
+      {{ h.query }}
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- Quick tries -->
+<section class="recent-section">
+  <h2 class="section-title">Try these</h2>
+  <div class="history-list">
+    {% for med in ['Crocin 500mg', 'Dolo 650', 'Augmentin 625', 'Pantop 40', 'Ecosprin 75'] %}
+    <a href="{{ url_for('search.search') }}?q={{ med | urlencode }}" class="history-chip history-chip--demo">
+      {{ med }}
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Autocomplete for dashboard search
+initAutocomplete('dash-search', 'autocomplete-list', '{{ url_for("search.autocomplete") }}');
+</script>
+{% endblock %}
