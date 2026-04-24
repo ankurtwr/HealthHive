@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}
-  {% if result and result.found %}{{ result.medicine.brand_name }} — {% endif %}Search — HealthHive
+  {% if result and result.found %}{{ result.medicine.brand_name }} — {% endif %}Search — MedCompare
 {% endblock %}
 
 {% block content %}
@@ -83,6 +83,24 @@
     </div>
     {% endif %}
 
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- LIVE PRICE COMPARISON SECTION (NEW) -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <section class="result-section" id="price-comparison-section">
+      <div class="section-header">
+        <h2 class="section-title">Live price comparison</h2>
+        <span class="section-count" id="price-count">Loading...</span>
+      </div>
+
+      <!-- Price cards will be injected here by JavaScript -->
+      <div id="price-cards" class="price-cards-grid">
+        <div class="loading-placeholder">
+          <div class="spinner"></div>
+          <p>Fetching live prices from e-pharmacies...</p>
+        </div>
+      </div>
+    </section>
+
     <!-- Generic alternatives -->
     <section class="result-section">
       <div class="section-header">
@@ -112,7 +130,6 @@
             <div class="generic-card-right">
               <div class="generic-price">₹{{ '%.2f'|format(g.mrp) }}</div>
               {% if s and s.cheapest_mrp %}
-                {% set saving_pct = ((s.cheapest_mrp - g.mrp|float) / s.cheapest_mrp * 100)|abs|round|int %}
                 {% if loop.first %}
                   <div class="price-tag price-tag--best">Cheapest</div>
                 {% endif %}
@@ -141,6 +158,72 @@
 
 {% block extra_js %}
 <script>
+// Autocomplete
 initAutocomplete('page-search', 'autocomplete-list2', '{{ url_for("search.autocomplete") }}');
+
+// ── Fetch live prices ──────────────────────────────────────────────────
+{% if result and result.found %}
+const medicineName = "{{ result.medicine.brand_name }}";
+
+fetch(`/prices?q=${encodeURIComponent(medicineName)}`)
+  .then(response => response.json())
+  .then(data => {
+    const priceCards = document.getElementById('price-cards');
+    const priceCount = document.getElementById('price-count');
+    
+    if (!data.prices || data.prices.length === 0) {
+      priceCards.innerHTML = '<p class="empty-state">No live prices available at the moment.</p>';
+      priceCount.textContent = '0 platforms';
+      return;
+    }
+    
+    priceCount.textContent = `${data.prices.length} platform${data.prices.length > 1 ? 's' : ''}`;
+    
+    // Render price cards
+    priceCards.innerHTML = data.prices.map((p, index) => `
+      <div class="price-card ${index === 0 ? 'price-card--best' : ''} ${!p.in_stock ? 'price-card--oos' : ''}">
+        <div class="price-card-header">
+          <div class="price-platform">${p.platform}</div>
+          ${index === 0 ? '<div class="best-price-badge">Best price</div>' : ''}
+          ${p.cached ? '<div class="cached-badge">Cached</div>' : ''}
+        </div>
+        
+        <div class="price-card-body">
+          <div class="price-main">
+            ${p.price ? '₹' + p.price.toFixed(2) : 'N/A'}
+          </div>
+          
+          ${p.mrp ? `
+            <div class="price-mrp">MRP ₹${p.mrp.toFixed(2)}</div>
+          ` : ''}
+          
+          ${p.discount ? `
+            <div class="price-discount">${p.discount}% off</div>
+          ` : ''}
+          
+          ${p.pack_size ? `
+            <div class="price-pack">${p.pack_size}</div>
+          ` : ''}
+        </div>
+        
+        <div class="price-card-footer">
+          ${p.in_stock ? `
+            <a href="${p.url}" target="_blank" class="buy-btn">
+              Buy now →
+            </a>
+          ` : `
+            <div class="out-of-stock">Out of stock</div>
+          `}
+        </div>
+      </div>
+    `).join('');
+  })
+  .catch(error => {
+    console.error('Price fetch error:', error);
+    document.getElementById('price-cards').innerHTML = 
+      '<p class="empty-state">Failed to load prices. Please try again.</p>';
+    document.getElementById('price-count').textContent = 'Error';
+  });
+{% endif %}
 </script>
 {% endblock %}

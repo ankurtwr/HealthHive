@@ -4,6 +4,7 @@ from flask_login import LoginManager
 from config import Config
 from models import User
 
+
 csrf = CSRFProtect()
 login = LoginManager()
 
@@ -29,10 +30,12 @@ def create_app():
     from routes.auth   import auth_bp
     from routes.main   import main_bp
     from routes.search import search_bp
+    from routes.prices import prices_bp
 
     app.register_blueprint(auth_bp)    
     app.register_blueprint(main_bp)   
     app.register_blueprint(search_bp)  # /search    /autocomplete
+    app.register_blueprint(prices_bp)
 
     return app
 
