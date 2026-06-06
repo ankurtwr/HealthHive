@@ -78,3 +78,57 @@ function initAutocomplete(inputId, listId, endpoint) {
     activeIndex = -1;
   }
 }
+
+// ── Chatbot Logic ──────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const chatbotWidget = document.getElementById('chatbotWidget');
+  const chatbotToggle = document.getElementById('chatbotToggle');
+  const chatbotClose = document.getElementById('chatbotClose');
+  const chatbotMessages = document.getElementById('chatbotMessages');
+  const chatbotInput = document.getElementById('chatbotInput');
+  const chatbotSend = document.getElementById('chatbotSend');
+
+  if (!chatbotWidget) return;
+
+  chatbotToggle.addEventListener('click', () => {
+    chatbotWidget.classList.add('open');
+    chatbotInput.focus();
+  });
+
+  chatbotClose.addEventListener('click', () => {
+    chatbotWidget.classList.remove('open');
+  });
+
+  const appendMessage = (text, sender) => {
+    const msg = document.createElement('div');
+    msg.className = `chat-msg ${sender}`;
+    msg.textContent = text;
+    chatbotMessages.appendChild(msg);
+    chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+  };
+
+  const sendMessage = async () => {
+    const text = chatbotInput.value.trim();
+    if (!text) return;
+
+    appendMessage(text, 'user');
+    chatbotInput.value = '';
+
+    try {
+      const response = await fetch('/api/chat/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+      const data = await response.json();
+      appendMessage(data.response, 'bot');
+    } catch (err) {
+      appendMessage('Sorry, I am having trouble connecting.', 'bot');
+    }
+  };
+
+  chatbotSend.addEventListener('click', sendMessage);
+  chatbotInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+});

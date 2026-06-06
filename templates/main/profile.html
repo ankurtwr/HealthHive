@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% block title %}My Profile — HealthHive{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">User Profile & Health Desk</h1>
+    <p class="page-sub">Manage your saved medicines, uploaded prescriptions, and schedule your medicine reminders.</p>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+  <!-- Left Side: User Info, Prescriptions & Saved Medicines -->
+  <div class="dashboard-col">
+    <!-- User Info Card -->
+    <div class="dash-card">
+      <h3 class="card-title">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="title-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+        Account Profile
+      </h3>
+      <div style="font-size: 0.9rem; color: var(--text2); display: flex; flex-direction: column; gap: 8px; margin-top: 5px;">
+        <div><strong>Username:</strong> {{ current_user.username }}</div>
+        <div><strong>Email:</strong> {{ current_user.email }}</div>
+        <div>
+          <strong>Terms Agreement:</strong> 
+          <span style="color: var(--accent); font-weight: 500;">Accepted ✓</span> 
+          {% if current_user.accepted_terms_at %}
+            <span style="font-size: 0.8rem; color: var(--text3);">on {{ current_user.accepted_terms_at }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Saved Medicines Log -->
+    <div class="dash-card">
+      <h3 class="card-title">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="title-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+        Saved Medicines
+      </h3>
+      {% if not saved_medicines %}
+        <p class="empty-state">No saved medicines yet. Search a medicine and click "Save to Profile" to add them here.</p>
+      {% else %}
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 5px;">
+          {% for m in saved_medicines %}
+            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg3); border: 1px solid var(--border2); padding: 10px 14px; border-radius: var(--radius);">
+              <div>
+                <a href="{{ url_for('search.search') }}?query={{ m.brand_name | urlencode }}" style="font-weight: 500; font-size: 0.95rem; color: var(--text);">{{ m.brand_name }}</a>
+                <div style="font-size: 0.78rem; color: var(--text3); margin-top: 2px;">{{ m.salt_composition }}</div>
+              </div>
+              <form action="{{ url_for('main.remove_saved_medicine', save_id=m.save_id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.82rem; font-weight: 500;">Remove</button>
+              </form>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Prescriptions Scanner & Uploads -->
+    <div class="dash-card">
+      <h3 class="card-title">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="title-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        Prescription Desk
+      </h3>
+      
+      <!-- Upload Form -->
+      <form action="{{ url_for('main.upload_prescription') }}" method="POST" enctype="multipart/form-data" style="margin-bottom: 1rem;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <input type="file" name="file" accept="image/*" required style="font-size: 0.85rem; color: var(--text2); background: var(--bg3); border: 1px dashed var(--border2); padding: 12px; border-radius: var(--radius); width: 100%; cursor: pointer;"/>
+          <button type="submit" class="btn-primary" style="padding: 8px 16px; font-size: 0.85rem;">Upload & OCR Scan</button>
+        </div>
+      </form>
+
+      {% if not prescriptions %}
+        <p class="empty-state">No uploaded prescriptions yet.</p>
+      {% else %}
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 5px;">
+          {% for p in prescriptions %}
+            <div style="background: var(--bg3); border: 1px solid var(--border2); padding: 14px; border-radius: var(--radius);">
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text3); margin-bottom: 8px;">
+                <span>Uploaded Prescription</span>
+                <span>{{ p.created_at }}</span>
+              </div>
+              {% if p.file_path %}
+                <a href="/{{ p.file_path }}" target="_blank" style="font-size: 0.82rem; color: var(--info); display: inline-block; margin-bottom: 8px; font-weight: 500;">🖼️ View Original Image</a>
+              {% endif %}
+              <div style="font-size: 0.82rem; color: var(--text2); background: var(--bg); border: 1px solid var(--border); padding: 10px; border-radius: 6px; max-height: 100px; overflow-y: auto; white-space: pre-line; font-family: monospace;">
+                {{ p.extracted_text }}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right Side: Reminders Scheduler & Alerts -->
+  <div class="dashboard-col">
+    <!-- Active Reminders List -->
+    <div class="dash-card">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 class="card-title">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="title-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+          Pill Reminders
+        </h3>
+        <button id="enable-notifications-btn" class="btn-ghost" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 12px; border-color: var(--accent-border); color: var(--accent); cursor: pointer;" onclick="requestNotificationPermission()">
+          🔔 Enable Alerts
+        </button>
+      </div>
+      <p class="simulator-desc" style="margin-bottom: 0.5rem;">Create alerts to remind you when it's time to take your medicine.</p>
+      
+      {% if not reminders %}
+        <p class="empty-state">No pill reminders scheduled yet. Add a reminder using the form below.</p>
+      {% else %}
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 5px;" id="reminder-container">
+          {% for r in reminders %}
+            <div class="reminder-card-item" data-id="{{ r.id }}" data-med="{{ r.medicine_name }}" data-dosage="{{ r.dosage }}" data-inst="{{ r.instructions }}" data-morning="{{ r.schedule_morning }}" data-noon="{{ r.schedule_noon }}" data-evening="{{ r.schedule_evening }}" data-night="{{ r.schedule_night }}" style="background: var(--bg3); border: 1px solid var(--border2); padding: 14px; border-radius: var(--radius); position: relative; border-left: 4px solid var(--accent);">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <strong style="color: var(--text); font-size: 1rem;">{{ r.medicine_name }}</strong>
+                  <span style="font-size: 0.8rem; color: var(--text3); margin-left: 6px;">({{ r.dosage or 'No Dosage' }})</span>
+                  
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                    {% if r.schedule_morning %}<span class="source-badge" style="background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border);">Morning</span>{% endif %}
+                    {% if r.schedule_noon %}<span class="source-badge" style="background: var(--info-bg); color: var(--info); border: 1px solid rgba(96,165,250,0.3);">Noon</span>{% endif %}
+                    {% if r.schedule_evening %}<span class="source-badge" style="background: rgba(251,191,36,0.1); color: var(--warn); border: 1px solid rgba(251,191,36,0.3);">Evening</span>{% endif %}
+                    {% if r.schedule_night %}<span class="source-badge" style="background: rgba(139,92,246,0.1); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3);">Night</span>{% endif %}
+                  </div>
+                  
+                  {% if r.instructions %}
+                    <div style="font-size: 0.8rem; color: var(--text2); margin-top: 6px;">
+                      <strong>Note:</strong> {{ r.instructions }}
+                    </div>
+                  {% endif %}
+                </div>
+                
+                <form action="{{ url_for('main.delete_reminder', reminder_id=r.id) }}" method="POST">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <button type="submit" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.82rem; font-weight: 500;">Delete</button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Add Reminder Form -->
+    <div class="dash-card">
+      <h3 class="card-title">Add Pill Reminder</h3>
+      <form action="{{ url_for('main.add_reminder') }}" method="POST" autocomplete="off">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <!-- Med Name -->
+          <div>
+            <label class="field-label" style="margin-bottom: 4px;">Medicine Name</label>
+            <input type="text" name="medicine_name" placeholder="e.g. Dolo 650, Calpol" required class="field-input" style="padding: 8px 12px; font-size: 0.9rem;"/>
+          </div>
+          
+          <!-- Dosage -->
+          <div>
+            <label class="field-label" style="margin-bottom: 4px;">Dosage</label>
+            <input type="text" name="dosage" placeholder="e.g. 1 Tablet, 2 Spoon" class="field-input" style="padding: 8px 12px; font-size: 0.9rem;"/>
+          </div>
+          
+          <!-- Schedule Pill Checkboxes -->
+          <div>
+            <label class="field-label" style="margin-bottom: 6px;">Consumption Schedule</label>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+              <label class="demo-chip" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; justify-content: center;">
+                <input type="checkbox" name="schedule_morning" style="accent-color: var(--accent);"/>
+                <span>Morning</span>
+              </label>
+              <label class="demo-chip" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; justify-content: center;">
+                <input type="checkbox" name="schedule_noon" style="accent-color: var(--accent);"/>
+                <span>Noon</span>
+              </label>
+              <label class="demo-chip" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; justify-content: center;">
+                <input type="checkbox" name="schedule_evening" style="accent-color: var(--accent);"/>
+                <span>Evening</span>
+              </label>
+              <label class="demo-chip" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; justify-content: center;">
+                <input type="checkbox" name="schedule_night" style="accent-color: var(--accent);"/>
+                <span>Night</span>
+              </label>
+            </div>
+          </div>
+          
+          <!-- Instructions -->
+          <div>
+            <label class="field-label" style="margin-bottom: 4px;">Special Instructions</label>
+            <input type="text" name="instructions" placeholder="e.g. After meals, before sleeping" class="field-input" style="padding: 8px 12px; font-size: 0.9rem;"/>
+          </div>
+          
+          <button type="submit" class="btn-primary" style="margin-top: 5px; padding: 10px;">Save Reminder</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Browser reminders notification checker
+document.addEventListener('DOMContentLoaded', () => {
+  // Check notification status on load
+  if (Notification.permission === 'granted') {
+    const btn = document.getElementById('enable-notifications-btn');
+    if (btn) {
+      btn.textContent = 'Alerts Active ✓';
+      btn.disabled = true;
+      btn.style.borderColor = 'var(--accent)';
+    }
+  }
+  
+  // Register checking loop
+  setInterval(checkReminders, 60000); // Check every minute
+  checkReminders(); // Run once initially
+});
+
+function requestNotificationPermission() {
+  Notification.requestPermission().then(permission => {
+    if (permission === 'granted') {
+      const btn = document.getElementById('enable-notifications-btn');
+      if (btn) {
+        btn.textContent = 'Alerts Active ✓';
+        btn.disabled = true;
+        btn.style.borderColor = 'var(--accent)';
+      }
+      new Notification("HealthHive Alerts Enabled!", {
+        body: "We will notify you when it's time to take your scheduled medicines.",
+        icon: "/static/favicon.ico"
+      });
+    }
+  });
+}
+
+function checkReminders() {
+  if (Notification.permission !== 'granted') return;
+  
+  const now = new Date();
+  const hrs = now.getHours();
+  const mins = now.getMinutes();
+  
+  // Define standard reminder times (adjust if you want custom ones):
+  // Morning: 08:00
+  // Noon: 13:00
+  // Evening: 18:00
+  // Night: 21:00
+  
+  let currentPeriod = null;
+  
+  if (hrs === 8 && mins === 0) currentPeriod = 'morning';
+  else if (hrs === 13 && mins === 0) currentPeriod = 'noon';
+  else if (hrs === 18 && mins === 0) currentPeriod = 'evening';
+  else if (hrs === 21 && mins === 0) currentPeriod = 'night';
+  
+  // MOCK FOR DEMONSTRATION OR TESTING:
+  // If the user loads the page, let's also trigger if they added something in the last minute.
+  // But for actual production, exact hour matching is standard.
+  
+  if (!currentPeriod) return; // Not a scheduled hour
+  
+  // Retrieve all elements representing reminders
+  const cards = document.querySelectorAll('.reminder-card-item');
+  cards.forEach(card => {
+    const med = card.getAttribute('data-med');
+    const dosage = card.getAttribute('data-dosage') || '';
+    const inst = card.getAttribute('data-inst') || '';
+    const morning = card.getAttribute('data-morning') === '1';
+    const noon = card.getAttribute('data-noon') === '1';
+    const evening = card.getAttribute('data-evening') === '1';
+    const night = card.getAttribute('data-night') === '1';
+    
+    let isDue = false;
+    if (currentPeriod === 'morning' && morning) isDue = true;
+    else if (currentPeriod === 'noon' && noon) isDue = true;
+    else if (currentPeriod === 'evening' && evening) isDue = true;
+    else if (currentPeriod === 'night' && night) isDue = true;
+    
+    if (isDue) {
+      new Notification(`Pill Reminder: ${med}`, {
+        body: `Time to take ${dosage}. ${inst ? 'Instructions: ' + inst : ''}`,
+        requireInteraction: true
+      });
+    }
+  });
+}
+</script>
+{% endblock %}

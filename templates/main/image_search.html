@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Image Search - HealthHive{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Image Search</h1>
+  <p class="page-sub">Upload a photo of a medicine strip to find details and alternatives.</p>
+</div>
+
+<div class="image-search-container" style="max-width: 600px; margin: 0 auto;">
+  <div class="info-box">
+    <div class="info-box-title">How it works</div>
+    <div class="info-box-text">Upload a clear picture of the medicine name. We'll extract the text and find matching generic alternatives and prices.</div>
+  </div>
+
+  <div class="image-upload-wrap" id="uploadWrap" onclick="document.getElementById('fileInput').click()">
+    <div class="upload-icon">📷</div>
+    <h3 class="upload-text">Click to upload or drag and drop</h3>
+    <p style="font-size: 0.8rem; color: var(--text3);">Supports JPG, PNG, WEBP</p>
+    <input type="file" id="fileInput" class="file-input" accept="image/*">
+  </div>
+  
+  <div id="imagePreviewContainer" style="display: none; text-align: center; margin-bottom: 2rem;">
+    <img id="imagePreview" style="max-width: 100%; max-height: 300px; border-radius: var(--radius); border: 1px solid var(--border);" />
+    <div style="margin-top: 1rem;">
+      <button class="btn-primary" id="searchBtn" style="width: 100%;">Search Medicine</button>
+    </div>
+  </div>
+  
+  <div id="loadingIndicator" style="display: none;" class="loading-placeholder">
+    <div class="spinner"></div>
+    <p>Analyzing image and searching database...</p>
+  </div>
+  
+  <div id="resultContainer" style="display: none; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem;">
+    <h3 style="font-family: var(--font-head); margin-bottom: 10px; color: var(--accent);">Match Found!</h3>
+    <p style="color: var(--text2); margin-bottom: 15px;">We detected: <strong id="detectedText" style="color: var(--text);"></strong></p>
+    <a href="#" id="resultLink" class="btn-primary btn-full">View Prices & Alternatives</a>
+  </div>
+  
+  <div id="errorContainer" style="display: none; background: var(--danger-bg); border: 1px solid rgba(248,113,113,.3); border-radius: var(--radius); padding: 1.5rem;">
+    <h3 style="font-family: var(--font-head); margin-bottom: 10px; color: var(--danger);">Search Failed</h3>
+    <p id="errorText" style="color: var(--text2);"></p>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const fileInput = document.getElementById('fileInput');
+  const uploadWrap = document.getElementById('uploadWrap');
+  const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+  const imagePreview = document.getElementById('imagePreview');
+  const searchBtn = document.getElementById('searchBtn');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const resultContainer = document.getElementById('resultContainer');
+  const detectedText = document.getElementById('detectedText');
+  const resultLink = document.getElementById('resultLink');
+  const errorContainer = document.getElementById('errorContainer');
+  const errorText = document.getElementById('errorText');
+  
+  let selectedFile = null;
+
+  fileInput.addEventListener('change', function(e) {
+    if (this.files && this.files[0]) {
+      selectedFile = this.files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        imagePreview.src = e.target.result;
+        uploadWrap.style.display = 'none';
+        imagePreviewContainer.style.display = 'block';
+        resultContainer.style.display = 'none';
+        errorContainer.style.display = 'none';
+      }
+      reader.readAsDataURL(this.files[0]);
+    }
+  });
+  
+  searchBtn.addEventListener('click', async function() {
+    if (!selectedFile) return;
+    
+    imagePreviewContainer.style.display = 'none';
+    loadingIndicator.style.display = 'flex';
+    errorContainer.style.display = 'none';
+    
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    
+    try {
+      const response = await fetch('/api/image_search/', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await response.json();
+      loadingIndicator.style.display = 'none';
+      
+      if (data.success) {
+        // Automatically redirect to the search comparison page
+        window.location.href = `/search?query=${encodeURIComponent(data.matched_medicine)}`;
+      } else {
+        errorContainer.style.display = 'block';
+        errorText.textContent = data.message || "Couldn't extract medicine name.";
+        uploadWrap.style.display = 'block';
+      }
+    } catch (err) {
+      loadingIndicator.style.display = 'none';
+      errorContainer.style.display = 'block';
+      errorText.textContent = "An error occurred during processing.";
+      uploadWrap.style.display = 'block';
+    }
+  });
+</script>
+{% endblock %}

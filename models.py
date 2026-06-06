@@ -7,11 +7,17 @@ class User(UserMixin):
     Flask-Login requires: is_authenticated, is_active, is_anonymous, get_id()
     UserMixin provides all four — we just need to store the user data.
     """
-    def __init__(self, id, username, email, password_hash,**kwargs):
+    def __init__(self, id, username, email, password_hash, **kwargs):
         self.id            = id
         self.username      = username
         self.email         = email
         self.password_hash = password_hash
+        self.accepted_terms = kwargs.get('accepted_terms', 0)
+        self.accepted_terms_at = kwargs.get('accepted_terms_at')
+
+    def accept_terms(self):
+        execute("UPDATE users SET accepted_terms = 1, accepted_terms_at = NOW() WHERE id = %s", (self.id,))
+        self.accepted_terms = 1
         
 
    

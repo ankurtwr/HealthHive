@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>{% block title %}HealthHive{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
   {% block extra_css %}{% endblock %}
 </head>
@@ -19,7 +19,8 @@
       {% if current_user.is_authenticated %}
         <a href="{{ url_for('main.dashboard') }}" class="nav-link">Dashboard</a>
         <a href="{{ url_for('search.search') }}" class="nav-link">Search</a>
-        <span class="nav-user">{{ current_user.username }}</span>
+        <a href="{{ url_for('main.image_search_page') }}" class="nav-link">Image Search</a>
+        <a href="{{ url_for('main.profile') }}" class="nav-user">👤 {{ current_user.username }}</a>
         <a href="{{ url_for('auth.logout') }}" class="nav-btn-ghost">Logout</a>
       {% else %}
         <a href="{{ url_for('auth.login') }}"    class="nav-link">Login</a>
@@ -46,6 +47,34 @@
   <main class="main-content">
     {% block content %}{% endblock %}
   </main>
+
+  <!-- ── GLOBAL DISCLAIMER & FOOTER ── -->
+  <footer class="footer">
+    <div class="footer-disclaimer">
+      <strong>Disclaimer:</strong> HealthHive is a generic medicine price comparison and educational platform. Suggestions provided here are NOT a substitute for professional medical advice, diagnosis, or treatment. Always consult a certified medical practitioner or doctor before switching, buying, or consuming any medicine.
+    </div>
+    <div class="footer-bottom">
+      &copy; 2026 HealthHive. All rights reserved. · <a href="{{ url_for('main.terms') }}" class="footer-link">Terms & Conditions</a>
+    </div>
+  </footer>
+  
+  <!-- ── CHATBOT WIDGET ─-->
+  <div class="chatbot-widget" id="chatbotWidget">
+    <div class="chatbot-toggle" id="chatbotToggle">💬</div>
+    <div class="chatbot-window">
+      <div class="chatbot-header">
+        <span class="chatbot-title">HealthHive Assistant</span>
+        <button class="chatbot-close" id="chatbotClose">×</button>
+      </div>
+      <div class="chatbot-messages" id="chatbotMessages">
+        <div class="chat-msg bot">Hi! I can help you find generic alternatives or compare prices. What are you looking for?</div>
+      </div>
+      <div class="chatbot-input-area">
+        <input type="text" class="chat-input" id="chatbotInput" placeholder="Type a message..." autocomplete="off">
+        <button class="chat-send" id="chatbotSend">Send</button>
+      </div>
+    </div>
+  </div>
 
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
   {% block extra_js %}{% endblock %}

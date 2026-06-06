@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Terms & Conditions — HealthHive{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card" style="max-width: 650px;">
+    <div class="auth-header">
+      <h1 class="auth-title">Terms & Conditions</h1>
+      <p class="auth-sub">Please read and accept the following terms before using HealthHive.</p>
+    </div>
+    
+    <div class="terms-content-box" style="background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius); padding: 1.5rem; max-height: 300px; overflow-y: auto; margin-bottom: 1.5rem; font-size: 0.88rem; color: var(--text2); line-height: 1.6;">
+      <h4 style="color: var(--text); margin-bottom: 0.5rem; font-weight: 600;">1. Educational and Informational Purpose</h4>
+      <p style="margin-bottom: 1rem;">
+        HealthHive is a digital tool designed for educational and informational purposes only. It compares retail medicine prices and suggests generic alternatives based on active chemical ingredients. It does not sell medicines or provide medical prescriptions.
+      </p>
+      
+      <h4 style="color: var(--text); margin-bottom: 0.5rem; font-weight: 600;">2. No Professional Medical Advice</h4>
+      <p style="margin-bottom: 1rem;">
+        The suggestions provided on this website are not a substitute for professional medical advice, diagnosis, or treatment. Always consult a registered medical practitioner (doctor) before switching, buying, or consuming any medicine.
+      </p>
+      
+      <h4 style="color: var(--text); margin-bottom: 0.5rem; font-weight: 600;">3. Pricing Accuracy Disclaimer</h4>
+      <p style="margin-bottom: 1rem;">
+        Prices displayed on HealthHive are fetched from public retail channels and local databases. While we endeavor to keep the prices as accurate and up-to-date as possible, actual market prices may vary. We are not liable for any discrepancies.
+      </p>
+      
+      <h4 style="color: var(--text); margin-bottom: 0.5rem; font-weight: 600;">4. Limitation of Liability</h4>
+      <p style="margin-bottom: 1rem;">
+        Under no circumstances shall HealthHive, its developers, or affiliates be liable for any direct, indirect, incidental, or consequential damages arising out of your choice of medicine selection, substitution, or medical outcomes.
+      </p>
+      
+      <h4 style="color: var(--text); margin-bottom: 0.5rem; font-weight: 600;">5. Legal Compliance</h4>
+      <p>
+        By clicking the "Accept & Proceed" button below, you confirm that you are over 18 years of age and acknowledge that you have read, understood, and agreed to be bound by these Terms and Conditions in accordance with the Information Technology Act, 2000, and standard health sector practices.
+      </p>
+    </div>
+    
+    <form action="{{ url_for('main.terms') }}" method="POST">
+      <!-- CSRF token inclusion -->
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        <label class="field-label" style="display: flex; align-items: flex-start; gap: 10px; text-transform: none; font-size: 0.85rem; cursor: pointer;">
+          <input type="checkbox" required style="margin-top: 3px; cursor: pointer; accent-color: var(--accent);" id="accept-checkbox"/>
+          <span>I have read the Terms and Conditions and explicitly agree to consult a certified doctor before buying or switching any medicine.</span>
+        </label>
+        
+        <button type="submit" class="btn-primary btn-full" style="padding: 12px;">Accept & Proceed</button>
+        <a href="{{ url_for('auth.logout') }}" class="btn-ghost btn-full" style="text-align: center; padding: 12px;">Cancel & Log Out</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

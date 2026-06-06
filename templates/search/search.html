@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}
-  {% if result and result.found %}{{ result.medicine.brand_name }} — {% endif %}Search — MedCompare
+  {% if result and result.found %}{{ result.medicine.brand_name }} — {% endif %}Search — HealthHive
 {% endblock %}
 
 {% block content %}
@@ -52,29 +52,50 @@
   <div class="result-wrap">
 
     <!-- Medicine header card -->
-    <div class="med-header-card">
-      <div class="med-header-left">
-        <div class="med-category-tag">{{ m.category or 'Medicine' }}</div>
-        <h1 class="med-title">{{ m.brand_name }}</h1>
-        <p class="med-salt">{{ m.salt_composition }}</p>
+    <div class="med-header-card" style="display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.75rem; flex-wrap: wrap;">
+      <div class="med-header-left" style="flex: 1; min-width: 250px;">
+        <div class="med-category-tag" style="margin-bottom: 0.5rem;">{{ m.category or 'Medicine' }}</div>
+        <h1 class="med-title" style="margin-bottom: 0.3rem;">{{ m.brand_name }}</h1>
+        <p class="med-salt" style="margin-bottom: 0.25rem;">{{ m.salt_composition }}</p>
         <p class="med-mfr">by {{ m.manufacturer or 'Unknown' }}
           {% if m.dosage_form %} · {{ m.dosage_form }}{% endif %}
           {% if m.strength %} · {{ m.strength }}{% endif %}
         </p>
+        <div style="margin-top: 1rem; display: flex; gap: 10px;">
+          <button id="save-med-btn" class="btn-ghost btn-save-med" onclick="saveMedicine({{ m.id }})" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 0.8rem; border-radius: 20px; cursor: pointer; transition: all 0.2s;">
+            <span class="save-icon">⭐</span> <span class="save-text">Save to Profile</span>
+          </button>
+        </div>
       </div>
-      {% if s %}
-      <div class="savings-badge">
-        <div class="savings-badge-label">Cheapest generic</div>
-        <div class="savings-badge-price">₹{{ '%.2f'|format(s.cheapest_mrp) }}</div>
-        <div class="savings-badge-sub">{{ s.cheapest.pack_size }}</div>
+      
+      {% if s and s.cheapest %}
+      <!-- Smart Switch Badge (Crisp & Small Switch Alert) -->
+      <div class="smart-savings-card" style="background: rgba(74, 222, 128, 0.04); border: 1px solid rgba(74, 222, 128, 0.15); padding: 16px; border-radius: var(--radius); text-align: left; max-width: 340px; flex-shrink: 0; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+        <div style="font-size: 0.75rem; color: var(--accent); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; display: flex; align-items: center; gap: 5px; margin-bottom: 6px;">
+          ⚡ Switch & Save
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text2); line-height: 1.45;">
+          Generic alternative <strong>{{ s.cheapest.generic_name }}</strong> is available at just <strong style="color: var(--accent);">₹{{ '%.2f'|format(s.cheapest_mrp) }}</strong>. Save up to <strong style="color: var(--accent);">{{ ((m.mrp - s.cheapest_mrp)/m.mrp * 100)|round|int if m.mrp and m.mrp > s.cheapest_mrp else 85 }}%</strong>!
+        </div>
       </div>
       {% endif %}
+    </div>
+    
+    <!-- Searched Medicine Info Box -->
+    <div class="info-box" style="margin-top: -0.5rem; margin-bottom: 1rem; background: var(--bg3); border-left: 4px solid var(--accent); padding: 14px 16px; border-radius: var(--radius);">
+      <h3 style="font-size: 0.95rem; color: var(--text); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        About {{ m.brand_name }}
+      </h3>
+      <p style="font-size: 0.88rem; color: var(--text2); line-height: 1.5; margin: 0;">
+        <strong>{{ m.brand_name }}</strong> contains the active ingredient <em>{{ m.salt_composition }}</em>. Please consult your doctor before switching medications.
+      </p>
     </div>
 
     <!-- Other brands with same salt -->
     {% if result.other_brands %}
-    <div class="also-sold-as">
-      <span class="also-label">Also sold as:</span>
+    <div class="also-sold-as" style="margin-bottom: 1rem;">
+      <span class="also-label" style="font-size: 0.8rem; color: var(--text3);">Alternative Brands:</span>
       {% for b in result.other_brands %}
         <a href="?q={{ b.brand_name | urlencode }}" class="history-chip history-chip--sm">
           {{ b.brand_name }}
@@ -83,72 +104,74 @@
     </div>
     {% endif %}
 
-    <!-- ══════════════════════════════════════════════════════════════ -->
-    <!-- LIVE PRICE COMPARISON SECTION (NEW) -->
-    <!-- ══════════════════════════════════════════════════════════════ -->
-    <section class="result-section" id="price-comparison-section">
-      <div class="section-header">
-        <h2 class="section-title">Live price comparison</h2>
-        <span class="section-count" id="price-count">Loading...</span>
-      </div>
+    <!-- ── SIDE BY SIDE COMPARISON LAYOUT ── -->
+    <div class="search-comparison-layout" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; align-items: start;">
+      
+      <!-- Left Column: Generic Alternatives -->
+      <div class="generic-comparison-col">
+        <section class="result-section" style="margin-bottom: 0; min-height: 400px; display: flex; flex-direction: column;">
+          <div class="section-header" style="margin-bottom: 0.75rem;">
+            <h2 class="section-title" style="display: flex; align-items: center; gap: 8px; font-size: 0.95rem;">
+              💊 Generic Alternatives
+            </h2>
+            <span class="section-count">{{ result.generics | length }} found</span>
+          </div>
+          <p style="color: var(--text2); margin-bottom: 1.25rem; font-size: 0.85rem; line-height: 1.4;">Certified generic options with identical active composition:</p>
 
-      <!-- Price cards will be injected here by JavaScript -->
-      <div id="price-cards" class="price-cards-grid">
-        <div class="loading-placeholder">
-          <div class="spinner"></div>
-          <p>Fetching live prices from e-pharmacies...</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Generic alternatives -->
-    <section class="result-section">
-      <div class="section-header">
-        <h2 class="section-title">Generic alternatives</h2>
-        <span class="section-count">{{ result.generics | length }} found</span>
-      </div>
-
-      {% if not result.generics %}
-        <p class="empty-state">No generics found in our database yet.</p>
-      {% else %}
-        <div class="generics-list">
-          {% for g in result.generics %}
-          <div class="generic-card {% if g.source == 'JanAushadhi' %}generic-card--ja{% endif %}">
-            <div class="generic-card-left">
-              {% if g.source == 'JanAushadhi' %}
-                <span class="source-badge source-badge--ja">Jan Aushadhi</span>
-              {% else %}
-                <span class="source-badge source-badge--cdsco">CDSCO</span>
-              {% endif %}
-              <div class="generic-name">{{ g.generic_name }}</div>
-              <div class="generic-meta">
-                {{ g.manufacturer }}
-                {% if g.pack_size %} · {{ g.pack_size }}{% endif %}
-                {% if g.jan_aushadhi_code %} · Code: {{ g.jan_aushadhi_code }}{% endif %}
+          {% if not result.generics %}
+            <p class="empty-state" style="flex: 1; display: flex; align-items: center; justify-content: center;">No generic substitutes found in database.</p>
+          {% else %}
+            <div class="generics-list" style="display: flex; flex-direction: column; gap: 10px;">
+              {% for g in result.generics %}
+              <div class="generic-card {% if g.source == 'JanAushadhi' %}generic-card--ja{% endif %}" style="padding: 12px 14px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  {% if g.source == 'JanAushadhi' %}
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                      <span class="source-badge source-badge--ja" style="font-size: 0.65rem;">Jan Aushadhi</span>
+                      <a href="https://janaushadhi.gov.in/KendraSearch.aspx" target="_blank" class="ja-locator-link" style="font-size: 0.65rem; color: var(--info); font-weight: 500;">📍 Find Kendra</a>
+                    </div>
+                  {% endif %}
+                  <div class="generic-name" style="font-weight: 500; font-size: 0.9rem; color: var(--text);">{{ g.generic_name }}</div>
+                  <div class="generic-meta" style="font-size: 0.75rem; color: var(--text3); margin-top: 2px;">
+                    {{ g.manufacturer }}
+                    {% if g.pack_size %} · {{ g.pack_size }}{% endif %}
+                  </div>
+                </div>
+                <div style="text-align: right; flex-shrink: 0;">
+                  <div class="generic-price" style="font-family: var(--font-head); font-size: 1.1rem; font-weight: 600; color: var(--accent);">₹{{ '%.2f'|format(g.mrp) }}</div>
+                  {% if s and s.cheapest_mrp and loop.first %}
+                    <span class="price-tag price-tag--best" style="font-size: 0.62rem; padding: 1px 6px;">Cheapest</span>
+                  {% endif %}
+                </div>
               </div>
+              {% endfor %}
             </div>
-            <div class="generic-card-right">
-              <div class="generic-price">₹{{ '%.2f'|format(g.mrp) }}</div>
-              {% if s and s.cheapest_mrp %}
-                {% if loop.first %}
-                  <div class="price-tag price-tag--best">Cheapest</div>
-                {% endif %}
-              {% endif %}
+          {% endif %}
+        </section>
+      </div>
+
+      <!-- Right Column: Live Retail Prices -->
+      <div class="live-prices-comparison-col">
+        <section class="result-section" id="price-comparison-section" style="margin-bottom: 0; min-height: 400px; display: flex; flex-direction: column;">
+          <div class="section-header" style="margin-bottom: 0.75rem;">
+            <h2 class="section-title" style="display: flex; align-items: center; gap: 8px; font-size: 0.95rem;">
+              🛒 Live Online Prices
+            </h2>
+            <span class="section-count" id="price-count">Loading...</span>
+          </div>
+          <p style="color: var(--text2); margin-bottom: 1.25rem; font-size: 0.85rem; line-height: 1.4;">Real-time availability and prices across leading online retail platforms:</p>
+
+          <!-- Price cards will be injected here by JavaScript -->
+          <div id="price-cards" style="display: flex; flex-direction: column; gap: 10px; flex: 1;">
+            <div class="loading-placeholder" style="margin: auto; text-align: center; padding: 2rem 0;">
+              <div class="spinner"></div>
+              <p style="font-size: 0.85rem; color: var(--text2); margin-top: 8px;">Fetching live prices...</p>
             </div>
           </div>
-          {% endfor %}
-        </div>
-      {% endif %}
-    </section>
-
-    <!-- Jan Aushadhi info box -->
-    {% if s and s.ja_options %}
-    <div class="ja-info-box">
-      <strong>Jan Aushadhi stores</strong> are government-run outlets across India selling
-      CDSCO-approved generics at 50–90% less than branded prices.
-      Find your nearest store at <a href="https://janaushadhi.gov.in" target="_blank">janaushadhi.gov.in</a>.
+        </section>
+      </div>
+      
     </div>
-    {% endif %}
 
   </div>
   {% endif %}
@@ -161,7 +184,41 @@
 // Autocomplete
 initAutocomplete('page-search', 'autocomplete-list2', '{{ url_for("search.autocomplete") }}');
 
-// ── Fetch live prices ──────────────────────────────────────────────────
+// ── Save medicine to profile ──
+function saveMedicine(medicineId) {
+  const btn = document.getElementById('save-med-btn');
+  const saveText = btn.querySelector('.save-text');
+  
+  btn.disabled = true;
+  saveText.textContent = 'Saving...';
+  
+  fetch(`/profile/medicine/save/${medicineId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token() }}'
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      saveText.textContent = 'Saved ✓';
+      btn.style.borderColor = 'var(--accent)';
+      btn.style.color = 'var(--accent)';
+    } else {
+      saveText.textContent = 'Error';
+      btn.disabled = false;
+      alert(data.message || 'Failed to save medicine.');
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    saveText.textContent = 'Error';
+    btn.disabled = false;
+  });
+}
+
+// ── Fetch live prices ──
 {% if result and result.found %}
 const medicineName = "{{ result.medicine.brand_name }}";
 
@@ -172,56 +229,89 @@ fetch(`/prices?q=${encodeURIComponent(medicineName)}`)
     const priceCount = document.getElementById('price-count');
     
     if (!data.prices || data.prices.length === 0) {
-      priceCards.innerHTML = '<p class="empty-state">No live prices available at the moment.</p>';
+      priceCards.innerHTML = '<div style="margin: auto; text-align: center; padding: 2rem 0; color: var(--text3); font-size: 0.9rem;">No live prices available.</div>';
       priceCount.textContent = '0 platforms';
       return;
     }
     
     priceCount.textContent = `${data.prices.length} platform${data.prices.length > 1 ? 's' : ''}`;
     
+    // Sort prices ascending so cheapest shows on top
+    const sortedPrices = [...data.prices].sort((a, b) => (a.price || 99999) - (b.price || 99999));
+    
     // Render price cards
-    priceCards.innerHTML = data.prices.map((p, index) => `
-      <div class="price-card ${index === 0 ? 'price-card--best' : ''} ${!p.in_stock ? 'price-card--oos' : ''}">
-        <div class="price-card-header">
-          <div class="price-platform">${p.platform}</div>
-          ${index === 0 ? '<div class="best-price-badge">Best price</div>' : ''}
-          ${p.cached ? '<div class="cached-badge">Cached</div>' : ''}
-        </div>
-        
-        <div class="price-card-body">
-          <div class="price-main">
-            ${p.price ? '₹' + p.price.toFixed(2) : 'N/A'}
+    priceCards.innerHTML = sortedPrices.map((p, index) => {
+      const isCheapest = index === 0 && p.price;
+      const isOos = !p.in_stock;
+      
+      return `
+        <div class="price-comparison-row" style="display: flex; gap: 14px; background: var(--bg3); border: 1px solid ${isCheapest ? 'var(--accent-border)' : 'var(--border)'}; padding: 12px; border-radius: var(--radius); align-items: center; position: relative; transition: border-color 0.2s; ${isOos ? 'opacity: 0.65;' : ''}">
+          
+          <!-- Product image aspect -->
+          <div class="price-img-box" style="width: 60px; height: 60px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;">
+            ${p.image_url ? `
+              <img src="${p.image_url}" alt="${p.medicine_name}" style="max-width: 100%; max-height: 100%; object-fit: contain;"/>
+            ` : `
+              <span style="font-size: 1.5rem; color: var(--text3);">💊</span>
+            `}
           </div>
-          
-          ${p.mrp ? `
-            <div class="price-mrp">MRP ₹${p.mrp.toFixed(2)}</div>
-          ` : ''}
-          
-          ${p.discount ? `
-            <div class="price-discount">${p.discount}% off</div>
-          ` : ''}
-          
-          ${p.pack_size ? `
-            <div class="price-pack">${p.pack_size}</div>
-          ` : ''}
+
+          <!-- Product Details aspect -->
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span style="font-size: 0.78rem; font-weight: 600; color: var(--text2); text-transform: uppercase;">${p.platform}</span>
+              ${isCheapest ? '<span style="font-size: 0.65rem; background: var(--accent-bg); border: 1px solid var(--accent-border); color: var(--accent); padding: 1px 6px; border-radius: 10px; font-weight: 500;">Best price</span>' : ''}
+              ${p.cached ? '<span style="font-size: 0.65rem; background: var(--bg); border: 1px solid var(--border); color: var(--text3); padding: 1px 6px; border-radius: 10px;">Cached</span>' : ''}
+            </div>
+            
+            <div style="font-weight: 500; font-size: 0.88rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              ${p.medicine_name}
+            </div>
+            
+            <div style="font-size: 0.75rem; color: var(--text3);">
+              ${p.pack_size ? `Size: ${p.pack_size}` : ''} 
+              ${p.manufacturer ? ` · ${p.manufacturer}` : ''}
+            </div>
+          </div>
+
+          <!-- Pricing & Action aspect -->
+          <div style="text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+            <div style="display: flex; align-items: baseline; gap: 6px;">
+              <span style="font-family: var(--font-head); font-size: 1.15rem; font-weight: 600; color: var(--accent);">
+                ${p.price ? '₹' + p.price.toFixed(2) : 'N/A'}
+              </span>
+              ${p.mrp && p.mrp > p.price ? `
+                <span style="font-size: 0.75rem; color: var(--text3); text-decoration: line-through;">₹${p.mrp.toFixed(2)}</span>
+              ` : ''}
+            </div>
+            
+            ${p.discount ? `
+              <span style="font-size: 0.68rem; background: rgba(74,222,128,0.08); color: var(--accent); padding: 1px 6px; border-radius: 4px; font-weight: 500;">
+                ${p.discount}% OFF
+              </span>
+            ` : ''}
+            
+            <div style="margin-top: 4px;">
+              ${p.in_stock ? `
+                <a href="${p.url}" target="_blank" class="btn-primary" style="padding: 4px 12px; font-size: 0.78rem; border-radius: 6px; display: inline-block;">
+                  Buy now
+                </a>
+              ` : `
+                <span style="font-size: 0.75rem; color: var(--danger); background: var(--danger-bg); padding: 2px 8px; border-radius: 4px; font-weight: 500;">
+                  Out of stock
+                </span>
+              `}
+            </div>
+          </div>
+
         </div>
-        
-        <div class="price-card-footer">
-          ${p.in_stock ? `
-            <a href="${p.url}" target="_blank" class="buy-btn">
-              Buy now →
-            </a>
-          ` : `
-            <div class="out-of-stock">Out of stock</div>
-          `}
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   })
   .catch(error => {
     console.error('Price fetch error:', error);
     document.getElementById('price-cards').innerHTML = 
-      '<p class="empty-state">Failed to load prices. Please try again.</p>';
+      '<div style="margin: auto; text-align: center; padding: 2rem 0; color: var(--text3); font-size: 0.9rem;">Failed to load live prices.</div>';
     document.getElementById('price-count').textContent = 'Error';
   });
 {% endif %}
