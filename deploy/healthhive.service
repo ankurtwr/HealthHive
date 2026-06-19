@@ -1,0 +1,24 @@
+[Unit]
+Description=HealthHive Flask App (Gunicorn)
+After=network.target mysql.service
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/HealthHive
+Environment="PATH=/home/ubuntu/HealthHive/venv/bin"
+EnvironmentFile=/home/ubuntu/HealthHive/.env
+ExecStart=/home/ubuntu/HealthHive/venv/bin/gunicorn \
+    --workers 2 \
+    --bind unix:/home/ubuntu/HealthHive/healthhive.sock \
+    -m 007 \
+    --timeout 120 \
+    --log-level info \
+    --access-logfile /var/log/healthhive/access.log \
+    --error-logfile /var/log/healthhive/error.log \
+    wsgi:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

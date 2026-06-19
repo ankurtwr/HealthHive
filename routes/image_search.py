@@ -2,11 +2,17 @@ import io
 import os
 import re
 import tempfile
-import subprocess
 from PIL import Image
 from flask import Blueprint, request, jsonify
 from google import genai
 from db import query_all
+
+# Cross-platform Tesseract path:
+# On Linux EC2: set TESSERACT_CMD=/usr/bin/tesseract in .env
+# On Windows locally: set TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe in .env
+import pytesseract
+tesseract_cmd = os.getenv("TESSERACT_CMD", "/usr/bin/tesseract")
+pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
 
 image_search_bp = Blueprint('image_search', __name__, url_prefix='/api/image_search')
 
@@ -121,45 +127,14 @@ def search_image():
                 })
             
             else:
-                # Use native Windows OCR via powershell script
-                print("[Image Search] No GEMINI_API_KEY found. Using local Windows OCR...")
+                # Fallback: use pytesseract (cross-platform — works on Linux EC2 and Windows)
+                print(f"[Image Search] No GEMINI_API_KEY found. Using pytesseract OCR (cmd: {tesseract_cmd})...")
                 
-                # Save file to a temporary location
-                with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp_file:
-                    temp_path = temp_file.name
-                    file.seek(0)
-                    temp_file.write(file.read())
+                file.seek(0)
+                img = Image.open(io.BytesIO(file.read()))
                 
-                # Path to ocr.ps1 in the scripts folder
-                scripts_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'scripts')
-                ps_script = os.path.join(scripts_dir, 'ocr.ps1')
-                
-                cmd = [
-                    "powershell",
-                    "-ExecutionPolicy", "Bypass",
-                    "-File", ps_script,
-                    "-ImagePath", temp_path
-                ]
-                
-                # Run the PowerShell command
-                result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-                
-                # Remove the temp file
-                try:
-                    os.unlink(temp_path)
-                except Exception as e:
-                    print(f"[Image Search] Failed to delete temp file {temp_path}: {e}")
-                
-                extracted_text = ""
-                if result.returncode == 0:
-                    stdout_lines = result.stdout.splitlines()
-                    for line in stdout_lines:
-                        if line.startswith("RECOGNIZED:"):
-                            extracted_text = line[len("RECOGNIZED:"):].strip()
-                            break
-                else:
-                    print(f"[Image Search] PowerShell OCR script error: {result.stderr}")
-                    return jsonify({'success': False, 'message': 'OCR engine failed to run.'})
+                # Run Tesseract OCR
+                extracted_text = pytesseract.image_to_string(img).strip()
                 
                 if not extracted_text:
                     return jsonify({

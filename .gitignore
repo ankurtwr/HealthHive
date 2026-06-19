@@ -1,4 +1,5 @@
-.venv/ 
+.venv/
+venv/
 __pycache__/
 .env
 *_debug.txt
@@ -7,4 +8,6 @@ janaushadi.txt
 *.pyc
 .idea/
 .vscode/
+# Gunicorn socket (created at runtime on EC2)
+*.sock
 
