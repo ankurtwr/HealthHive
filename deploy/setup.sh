@@ -234,12 +234,12 @@ sudo systemctl is-active --quiet healthhive && log "Gunicorn service is running"
 # ── Nginx configuration ───────────────────────────────────────
 info "Configuring Nginx..."
 
-# Get the public IP automatically
-PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || echo "_")
+# Keep server_name as _ (wildcard catch-all) so the site remains accessible even if the EC2 Public IP changes.
+# If you map a domain name later, you can replace _ with your domain name.
+# We also print the public IP for convenience.
+PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || curl -s https://ifconfig.me 2>/dev/null || echo "_")
 
 sudo cp "$APP_DIR/deploy/nginx_healthhive.conf" "$NGINX_CONF"
-# Update server_name with actual public IP
-sudo sed -i "s/server_name _;/server_name ${PUBLIC_IP};/" "$NGINX_CONF"
 
 # Enable site, disable default
 sudo ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/healthhive

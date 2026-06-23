@@ -15,6 +15,74 @@ from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 from db import query_one, execute
 
+def _calculate_match_score(query, name):
+    """
+    Calculates a robust matching score between query and product name.
+    Prioritizes exact word matches, primary brand name matches, and overall similarity.
+    """
+    query_lower = query.lower().strip()
+    name_lower = name.lower().strip()
+    
+    if not name_lower or not query_lower:
+        return 0.0
+        
+    # Standardize words
+    query_words = [w for w in re.split(r'[^a-z0-9]', query_lower) if w]
+    name_words = [w for w in re.split(r'[^a-z0-9]', name_lower) if w]
+    
+    if not query_words or not name_words:
+        return 0.0
+        
+    # Check how many query words are EXACT words or prefixes in the product name
+    exact_word_matches = 0
+    prefix_word_matches = 0
+    for qw in query_words:
+        if qw in name_words:
+            exact_word_matches += 1
+        elif any(nw.startswith(qw) for nw in name_words):
+            prefix_word_matches += 1
+            
+    # Calculate overlap ratios
+    exact_ratio = exact_word_matches / len(query_words)
+    prefix_ratio = prefix_word_matches / len(query_words)
+    
+    # Calculate similarity of the first word (usually the primary brand name)
+    first_word_similarity = 0.0
+    if query_words and name_words:
+        first_word_similarity = SequenceMatcher(None, query_words[0], name_words[0]).ratio()
+        
+    # Similarity score of the entire string
+    overall_similarity = SequenceMatcher(None, query_lower, name_lower).ratio()
+    
+    # Score weightings
+    score = (exact_ratio * 10.0) + (prefix_ratio * 3.0) + (first_word_similarity * 2.0) + (overall_similarity * 1.0)
+    
+    # If the first word of query is not in the name (neither exact nor prefix), penalize heavily
+    if query_words and not any(nw.startswith(query_words[0]) for nw in name_words):
+        score -= 6.0
+        
+    return score
+
+def _extract_price_by_class(html, class_keyword):
+    """
+    Finds a tag with a class attribute containing class_keyword and extracts the price.
+    Robust against HTML comments, spacing, and inner tags.
+    """
+    # Match tag containing class_keyword in class attribute
+    # e.g., class="ProductDetails_originalPrice__p1RjZ" or class="DrugPriceBox__best-price"
+    match = re.search(r'class=["\'][^"\']*' + re.escape(class_keyword) + r'[^"\']*["\'][^>]*>(.*?)</', html, re.DOTALL)
+    if match:
+        segment = match.group(1)
+        # Strip HTML comments
+        cleaned = re.sub(r'<!--.*?-->', '', segment)
+        # Strip remaining tags
+        cleaned = re.sub(r'<[^>]*>', '', cleaned)
+        # Find first number
+        num_match = re.search(r'[\d.]+', cleaned)
+        if num_match:
+            return float(num_match.group())
+    return None
+
 # ── Configuration ────────────────────────────────────────────────────────
 
 CACHE_HOURS = 4
@@ -299,23 +367,12 @@ def _fetch_netmeds(medicine_name, medicine_id):
                         
                         best_match = None
                         best_score = 0
-                        query_lower = medicine_name.lower().strip()
-                        query_words = query_lower.split()
                         
                         for item in items:
-                            name = item.get('name', '').lower()
-                            similarity = SequenceMatcher(None, query_lower, name).ratio()
+                            name = item.get('name', '')
+                            score = _calculate_match_score(medicine_name, name)
                             
-                            # Substring word overlap
-                            words_found = 0
-                            for qw in query_words:
-                                if qw in name:
-                                    words_found += 1
-                            word_overlap = words_found / len(query_words) if query_words else 0
-                            
-                            score = (similarity * 0.4) + (word_overlap * 0.6)
-                            
-                            if score > best_score and score > 0.4:
+                            if score > best_score and score > 2.0:
                                 best_score = score
                                 best_match = item
                                 
@@ -427,26 +484,14 @@ def _fetch_pharmeasy(medicine_name, medicine_id):
             products = data.get('data', {}).get('products', [])
             
             if products:
-                # Get best matching product using substring-based word matching
                 best_match = None
                 best_score = 0
-                query_lower = medicine_name.lower().strip()
-                query_words = query_lower.split()
                 
                 for item in products:
-                    name = item.get('name', '').lower()
-                    similarity = SequenceMatcher(None, query_lower, name).ratio()
+                    name = item.get('name', '')
+                    score = _calculate_match_score(medicine_name, name)
                     
-                    # Substring word overlap
-                    words_found = 0
-                    for qw in query_words:
-                        if qw in name:
-                            words_found += 1
-                    word_overlap = words_found / len(query_words) if query_words else 0
-                    
-                    score = (similarity * 0.4) + (word_overlap * 0.6)
-                    
-                    if score > best_score and score > 0.4:
+                    if score > best_score and score > 2.0:
                         best_score = score
                         best_match = item
                 
@@ -576,33 +621,19 @@ def _find_best_match_1mg(query, api_response):
             products = drug_products
 
         # ── Score each product ──
-        query_lower = query.lower().strip()
-        query_words = query_lower.split()
-        
         scored = []
         
         for product in products:
-            product_name = (product.get('name') or '').lower()
+            product_name = product.get('name') or ''
             
             if not product_name:
                 continue
             
-            # Similarity score
-            similarity = SequenceMatcher(None, query_lower, product_name).ratio()
-            
-            # Substring word overlap
-            words_found = 0
-            for qw in query_words:
-                if qw in product_name:
-                    words_found += 1
-            word_overlap = words_found / len(query_words) if query_words else 0
-            
-            # Combined score
-            final_score = (similarity * 0.4) + (word_overlap * 0.6)
+            score = _calculate_match_score(query, product_name)
             
             scored.append({
                 'product': product,
-                'score': final_score,
+                'score': score,
                 'name': product_name
             })
         
@@ -617,6 +648,10 @@ def _find_best_match_1mg(query, api_response):
         print(f"[1mg Match] Query: '{query}'")
         for i, item in enumerate(scored[:3], 1):
             print(f"  {i}. {item['name']} (score: {item['score']:.2f})")
+            
+        if scored[0]['score'] < 2.0:
+            print(f"[1mg Match] Best match '{scored[0]['name']}' score {scored[0]['score']:.2f} below threshold 2.0")
+            return None
         
         return scored[0]['product']
         
@@ -761,7 +796,7 @@ def _calculate_discount(price, mrp):
 
 
 def _fetch_pharmeasy_page_prices(product_url):
-    """Fetch and parse exact prices from a PharmEasy product page HTML using regex."""
+    """Fetch and parse exact prices from a PharmEasy product page HTML."""
     try:
         pe_headers = HEADERS.copy()
         pe_headers['Origin'] = 'https://pharmeasy.in'
@@ -770,13 +805,8 @@ def _fetch_pharmeasy_page_prices(product_url):
         res = requests.get(product_url, headers=pe_headers, timeout=8)
         if res.status_code == 200:
             html = res.text
-            # Extract sale price (originalPrice class)
-            price_m = re.search(r'ProductDetails_originalPrice[a-zA-Z0-9_-]*["\'][^>]*>\s*(?:&#x20B9;|₹)?(?:<!-- -->)?\s*([\d.]+)', html)
-            # Extract MRP (mrpPrice class)
-            mrp_m = re.search(r'ProductDetails_mrpPrice[a-zA-Z0-9_-]*["\'][^>]*>(?:MRP)?\s*(?:&#x20B9;|₹)?(?:<!-- -->)?\s*([\d.]+)', html)
-            
-            price = float(price_m.group(1)) if price_m else None
-            mrp = float(mrp_m.group(1)) if mrp_m else None
+            price = _extract_price_by_class(html, 'originalPrice')
+            mrp = _extract_price_by_class(html, 'mrpPrice')
             
             if price:
                 print(f"[PharmEasy HTML] Found exact page prices - Price: Rs.{price} | MRP: Rs.{mrp or price}")
@@ -787,19 +817,14 @@ def _fetch_pharmeasy_page_prices(product_url):
 
 
 def _fetch_1mg_page_prices(product_url):
-    """Fetch and parse exact prices from a Tata 1mg product page HTML using regex."""
+    """Fetch and parse exact prices from a Tata 1mg product page HTML."""
     try:
         print(f"[1mg HTML] Fetching product page: {product_url}")
         res = requests.get(product_url, headers=HEADERS, timeout=8)
         if res.status_code == 200:
             html = res.text
-            # Extract sale price (best-price class)
-            price_m = re.search(r'DrugPriceBox__best-price[a-zA-Z0-9_-]*["\'][^>]*>\s*(?:&#x20B9;|₹)?(?:<!-- -->)?\s*([\d.]+)', html)
-            # Extract MRP (slashed-price class)
-            mrp_m = re.search(r'DrugPriceBox__slashed-price[a-zA-Z0-9_-]*["\'][^>]*>\s*(?:&#x20B9;|₹)?(?:<!-- -->)?\s*([\d.]+)', html)
-            
-            price = float(price_m.group(1)) if price_m else None
-            mrp = float(mrp_m.group(1)) if mrp_m else None
+            price = _extract_price_by_class(html, 'best-price')
+            mrp = _extract_price_by_class(html, 'slashed-price')
             
             if price:
                 print(f"[1mg HTML] Found exact page prices - Price: Rs.{price} | MRP: Rs.{mrp or price}")

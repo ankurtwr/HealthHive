@@ -51,6 +51,27 @@
 
   <div class="result-wrap">
 
+    {% if result.not_in_db %}
+    <div class="info-box" style="margin-bottom: 1rem; background: var(--danger-bg); border-left: 4px solid var(--danger); padding: 14px 16px; border-radius: var(--radius);">
+      <h3 style="font-size: 0.95rem; color: var(--text); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+        ⚠️ Medicine Not In Database
+      </h3>
+      <p style="font-size: 0.88rem; color: var(--text2); line-height: 1.5; margin: 0; margin-bottom: 8px;">
+        <strong>"{{ result.query }}"</strong> is not found in our database, so we cannot show generic substitutes. We are searching live online pharmacies below:
+      </p>
+      {% if result.suggestions %}
+      <div class="suggestions" style="margin-top: 8px; border-top: 1px solid var(--border); padding-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+        <p class="suggestions-label" style="font-size: 0.8rem; color: var(--text3); margin: 0;">Did you mean one of these database items?</p>
+        <div class="history-list">
+          {% for s in result.suggestions %}
+          <a href="?q={{ s.brand_name | urlencode }}" class="history-chip" style="font-size: 0.78rem; padding: 3px 10px;">{{ s.brand_name }}</a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
     <!-- Medicine header card -->
     <div class="med-header-card" style="display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.75rem; flex-wrap: wrap;">
       <div class="med-header-left" style="flex: 1; min-width: 250px;">

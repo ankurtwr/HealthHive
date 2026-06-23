@@ -131,4 +131,30 @@ document.addEventListener('DOMContentLoaded', () => {
   chatbotInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendMessage();
   });
+
+  // ── Theme Toggle Logic ──
+  const themeToggle = document.getElementById('theme-toggle-btn');
+  if (themeToggle) {
+    const updateToggleIcon = () => {
+      if (document.documentElement.classList.contains('light-theme')) {
+        themeToggle.textContent = '☀️';
+      } else {
+        themeToggle.textContent = '🌙';
+      }
+    };
+    
+    // Set initial icon
+    updateToggleIcon();
+
+    themeToggle.addEventListener('click', () => {
+      if (document.documentElement.classList.contains('light-theme')) {
+        document.documentElement.classList.remove('light-theme');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.add('light-theme');
+        localStorage.setItem('theme', 'light');
+      }
+      updateToggleIcon();
+    });
+  }
 });

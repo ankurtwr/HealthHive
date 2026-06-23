@@ -7,6 +7,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'light') {
+        document.documentElement.classList.add('light-theme');
+      }
+    })();
+  </script>
   {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -26,6 +34,9 @@
         <a href="{{ url_for('auth.login') }}"    class="nav-link">Login</a>
         <a href="{{ url_for('auth.register') }}" class="nav-btn">Register</a>
       {% endif %}
+      <button id="theme-toggle-btn" style="background: none; border: none; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: transform 0.2s;" title="Toggle Appearance">
+        🌙
+      </button>
     </div>
   </nav>
 

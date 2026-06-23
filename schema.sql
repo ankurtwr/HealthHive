@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS price_cache (
     product_url  VARCHAR(1000),
     in_stock     TINYINT(1) DEFAULT 1,
     fetched_at   DATETIME NOT NULL,
+    image_url    VARCHAR(1000) NULL,
     FOREIGN KEY (medicine_id) REFERENCES medicines(id) ON DELETE CASCADE,
     INDEX idx_med (medicine_id, platform)
 );

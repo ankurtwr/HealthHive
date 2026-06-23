@@ -24,6 +24,102 @@
   --font-body: 'Inter', sans-serif;
 }
 
+:root.light-theme {
+  --bg:        #f8fafc;
+  --bg2:       #ffffff;
+  --bg3:       #f1f5f9;
+  --border:    #e2e8f0;
+  --border2:   #cbd5e1;
+  --text:      #0f172a;
+  --text2:     #475569;
+  --text3:     #64748b;
+  --accent:    #16a34a;
+  --accent2:   #15803d;
+  --accent-bg: rgba(22,163,74,0.06);
+  --accent-border: rgba(22,163,74,0.15);
+}
+
+/* Light Theme Component overrides */
+.light-theme .navbar {
+  background: rgba(255, 255, 255, 0.85);
+}
+.light-theme .chatbot-window {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+.light-theme .chat-msg.bot {
+  background: rgba(241, 245, 249, 0.95);
+  color: var(--text);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+.light-theme .chatbot-input-area {
+  background: rgba(241, 245, 249, 0.95);
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+.light-theme .chatbot-header {
+  background: linear-gradient(135deg, #e2e8f0, #ffffff);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+.light-theme .chat-msg.user {
+  color: #ffffff;
+}
+.light-theme .btn-primary {
+  color: #ffffff;
+}
+.light-theme .btn-primary:hover {
+  color: #ffffff;
+}
+.light-theme .nav-btn {
+  color: #ffffff;
+}
+.light-theme .nav-btn:hover {
+  color: #ffffff;
+}
+.light-theme .chatbot-toggle {
+  color: #ffffff;
+}
+
+/* Light Mode Hover and Contrast Adjustments */
+.light-theme .history-chip:hover {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent) !important;
+}
+.light-theme .autocomplete-item:hover,
+.light-theme .autocomplete-item.active {
+  background: #e2e8f0;
+  color: var(--text) !important;
+}
+.light-theme .generic-card:hover {
+  background: #f1f5f9;
+  border-color: var(--border2);
+}
+.light-theme .generic-card--ja:hover {
+  background: rgba(22, 163, 74, 0.08);
+  border-color: var(--accent);
+}
+.light-theme .price-comparison-row:hover {
+  background: #f1f5f9;
+  border-color: var(--border2);
+}
+.light-theme .feature-card:hover {
+  background: #f8fafc;
+  border-color: var(--border2);
+}
+.light-theme .btn-ghost:hover {
+  background: #e2e8f0;
+  color: var(--text) !important;
+}
+.light-theme input::placeholder {
+  color: #94a3b8;
+}
+.light-theme .chat-msg.user {
+  color: #ffffff !important; /* Ensure user bubble text remains white for high contrast */
+}
+
+
+
 /* ── Reset ──────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 16px; }

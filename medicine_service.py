@@ -30,13 +30,36 @@ def search_medicine(query_str):
         """, (f'%{q}%',))
 
     if not medicine:
+        # Create a mock medicine dictionary to show search layout for live scraper
+        mock_medicine = {
+            'id': -1,
+            'brand_name': query_str.title(),
+            'salt_composition': 'Salt Composition Unknown (Not in database)',
+            'manufacturer': 'Unknown Manufacturer',
+            'category': 'Medicine',
+            'dosage_form': '',
+            'strength': '',
+            'mrp': None
+        }
+        
+        # Suggestions for alternate spelling
         suggestions = query_all("""
             SELECT DISTINCT brand_name, manufacturer, salt_composition
             FROM medicines
             WHERE LOWER(brand_name) LIKE %s OR LOWER(salt_composition) LIKE %s
             LIMIT 6
         """, (f'%{q}%', f'%{q}%'))
-        return {'found': False, 'query': query_str, 'suggestions': suggestions}
+
+        return {
+            'found': True,
+            'query': query_str,
+            'medicine': mock_medicine,
+            'generics': [],
+            'other_brands': [],
+            'savings': None,
+            'suggestions': suggestions,
+            'not_in_db': True
+        }
 
     # generics for the same salt (Jan Aushadhi first, then by MRP)
     generics = query_all("""
