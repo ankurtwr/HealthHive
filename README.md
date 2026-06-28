@@ -1,4 +1,5 @@
-# HealthHive: Intelligent Generic Medicine Recommender & Price Comparator
+# HealthHive: Intelligent Generic Medicine Recommender & Price Comparator 
+#http://15.206.74.125
 
 HealthHive is a comprehensive web application designed to help users find affordable generic alternatives to expensive branded medicines, compare live prices across multiple e-pharmacies, and make informed healthcare decisions using AI-driven tools.
 
