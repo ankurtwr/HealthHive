@@ -100,8 +100,10 @@ def start_reminder_daemon(app):
         
         while True:
             try:
-                now = datetime.now()
-                current_min_str = now.strftime("%H:%M")
+                from datetime import timezone, timedelta
+                ist_tz = timezone(timedelta(hours=5, minutes=30))
+                now_ist = datetime.now(ist_tz)
+                current_min_str = now_ist.strftime("%H:%M")
                 
                 # Run database queries inside Flask app context
                 if current_min_str != last_checked_minute:
