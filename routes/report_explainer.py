@@ -26,7 +26,7 @@ def report_explainer_page():
 
     if load_id:
         row = query_one("""
-            SELECT id, analysis_json, diet_suggestions FROM user_reports
+            SELECT id, analysis_json, diet_suggestions, is_saved FROM user_reports
             WHERE id = %s AND user_id = %s
         """, (load_id, current_user.id))
         if row:
