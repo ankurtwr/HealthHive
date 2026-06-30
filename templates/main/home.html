@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% block title %}HealthHive — Find Generic Medicines{% endblock %}
+{% block title %}HealthHive — Your Digital Health Companion{% endblock %}
 
 {% block content %}
 <div class="hero">
-  <div class="hero-tag">India's medicine price intelligence</div>
+  <div class="hero-tag">India's health intelligence platform</div>
   <h1 class="hero-title">
-    Pay less.<br>
-    <span class="hero-accent">Same medicine.</span>
+    Your Health,<br>
+    <span class="hero-accent">Simplified.</span>
   </h1>
   <p class="hero-sub">
-    Search any branded medicine. Instantly find its generic alternatives
-    and compare prices across top Indian pharmacies.
+    Search medicines, analyze medical reports, store prescriptions, 
+    and get dietary suggestions — all in one place.
   </p>
   <div class="hero-actions">
     <a href="{{ url_for('auth.register') }}" class="btn-primary">Get started free</a>
@@ -28,19 +28,34 @@
 
 <div class="features">
   <div class="feature-card">
+    <div class="feature-icon">📋</div>
+    <h3>Report Analyser</h3>
+    <p>Upload medical reports and get AI-powered explanations with color-coded values — red, yellow, green — so you understand every parameter.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">🗂️</div>
+    <h3>Health Vault</h3>
+    <p>Securely store your prescriptions and reports. Access them anytime — no need to carry physical copies.</p>
+  </div>
+  <div class="feature-card">
     <div class="feature-icon">⬡</div>
-    <h3>Salt-based matching</h3>
+    <h3>Salt-based Matching</h3>
     <p>We look up the active ingredient (salt), not just the brand name — so you see every equivalent option.</p>
   </div>
   <div class="feature-card">
-    <div class="feature-icon">⬡</div>
-    <h3>Jan Aushadhi first</h3>
+    <div class="feature-icon">💊</div>
+    <h3>Jan Aushadhi First</h3>
     <p>Government-subsidised generics from PMBJP stores are always shown first — often 70–90% cheaper.</p>
   </div>
   <div class="feature-card">
-    <div class="feature-icon">⬡</div>
-    <h3>Price comparison</h3>
-    <p>Compare the same medicine across Netmeds, Tata 1mg, PharmEasy, and Apollo in one view.</p>
+    <div class="feature-icon">📸</div>
+    <h3>Medicine Scanner</h3>
+    <p>Take a photo of any medicine and instantly identify it, find its generic alternatives, and compare prices.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">🥗</div>
+    <h3>Diet Suggestions</h3>
+    <p>Get WHO-based dietary recommendations to balance deficiencies detected in your medical reports.</p>
   </div>
 </div>
 {% endblock %}

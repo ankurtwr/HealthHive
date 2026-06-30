@@ -2,29 +2,17 @@
 {% block title %}Dashboard — HealthHive{% endblock %}
 
 {% block content %}
-<!-- Welcome Header Banner -->
-<div class="dashboard-hero">
-  <div class="hero-left">
-    <span class="welcome-tag">WELCOME BACK</span>
-    <h1 class="welcome-title">Hello, {{ current_user.username }}</h1>
-    <p class="welcome-subtitle">Your digital portal for comparative pharmacy prices, generic search, and medicine savings.</p>
-  </div>
-  <div class="hero-right-metrics">
-    <div class="metric-card">
-      <div class="metric-num">95%</div>
-      <div class="metric-lbl">Generic Match Rate</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-num">74%</div>
-      <div class="metric-lbl">Average Price Saving</div>
-    </div>
-  </div>
+<!-- Clean Welcome Header -->
+<div class="dashboard-welcome">
+  <span class="welcome-tag">WELCOME BACK</span>
+  <h1 class="welcome-title">Hello, {{ current_user.username }}</h1>
+  <p class="welcome-subtitle">Your digital health companion — search medicines, analyze reports, and manage your health.</p>
 </div>
 
 <!-- Prominent Search Card -->
 <div class="search-section-card">
-  <h2 class="search-section-title">Compare & Find Generics</h2>
-  <p class="search-section-desc">Enter a brand-name medicine to find its active chemical ingredients, local PMBJP generics, and live retail pharmacy prices.</p>
+  <h2 class="search-section-title">Search Medicines</h2>
+  <p class="search-section-desc">Find generic alternatives and compare prices across pharmacies.</p>
   <form action="{{ url_for('search.search') }}" method="GET" class="dash-search-form" autocomplete="off">
     <div class="search-input-wrap">
       {{ form.query(
@@ -34,7 +22,7 @@
       ) }}
       <div id="autocomplete-list" class="autocomplete-list"></div>
     </div>
-    <button type="submit" class="btn-primary">Search Medicine</button>
+    <button type="submit" class="btn-primary">Search</button>
   </form>
   {% if form.query.errors %}
     {% for e in form.query.errors %}
@@ -43,125 +31,52 @@
   {% endif %}
 </div>
 
-<!-- Main Grid Dashboard Content -->
-<div class="dashboard-grid">
-  <!-- Left Side: Activity Logs -->
-  <div class="dashboard-col">
-    {% if history %}
-    <div class="dash-card">
-      <h3 class="card-title">
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="title-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        Recent Searches
-      </h3>
-      <div class="history-list">
-        {% for h in history %}
-        <a href="{{ url_for('search.search') }}?query={{ h.query | urlencode }}" class="history-chip">
-          {{ h.query }}
-        </a>
-        {% endfor %}
-      </div>
+<!-- Quick Access Module Cards -->
+<div class="module-cards-grid">
+  <!-- Report Explainer Card -->
+  <a href="{{ url_for('report.report_explainer_page') }}" class="module-card module-card-report" id="module-report">
+    <div class="module-card-icon">📋</div>
+    <div class="module-card-content">
+      <h3>Report Analyser</h3>
+      <p>Upload medical reports and get AI-powered, easy-to-understand explanations with color-coded values.</p>
     </div>
-    {% endif %}
+    <span class="module-card-arrow">→</span>
+  </a>
 
-    <div class="dash-card">
-      <h3 class="card-title">
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="title-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-        Try These Medicines
-      </h3>
-      <div class="history-list">
-        {% for med in ['Crocin 500mg', 'Dolo 650', 'Augmentin 625', 'Pantop 40', 'Ecosprin 75'] %}
-        <a href="{{ url_for('search.search') }}?query={{ med | urlencode }}" class="history-chip demo-chip">
-          {{ med }}
-        </a>
-        {% endfor %}
-      </div>
+  <!-- Health Vault Card -->
+  <a href="{{ url_for('main.profile') }}" class="module-card module-card-vault" id="module-vault">
+    <div class="module-card-icon">🗂️</div>
+    <div class="module-card-content">
+      <h3>Health Vault</h3>
+      <p>Store your prescriptions and medical reports securely. Access them anytime, anywhere.</p>
     </div>
-  </div>
+    <span class="module-card-arrow">→</span>
+  </a>
 
-  <!-- Right Side: Advanced Savings Simulator and Quick Action Tools -->
-  <div class="dashboard-col">
-    <!-- Savings Simulator Widget -->
-    <div class="dash-card savings-simulator">
-      <h3 class="card-title">
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="title-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        Savings Calculator
-      </h3>
-      <p class="simulator-desc">Visual comparison of branded costs versus certified generic equivalents:</p>
-      
-      <div class="sim-bars">
-        <div class="sim-bar-item">
-          <div class="sim-bar-labels">
-            <span>Branded Medicine Spend</span>
-            <strong>₹1,500</strong>
-          </div>
-          <div class="sim-bar-progress-wrap">
-            <div class="sim-bar-progress branded-progress"></div>
-          </div>
-        </div>
-        
-        <div class="sim-bar-item">
-          <div class="sim-bar-labels">
-            <span>Jan Aushadhi Generic Spend</span>
-            <strong>₹320</strong>
-          </div>
-          <div class="sim-bar-progress-wrap">
-            <div class="sim-bar-progress generic-progress"></div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="sim-savings-text">
-        Estimated Savings: <span class="savings-amount">₹1,180 (78.6%)</span> per month!
-      </div>
+  <!-- Medicine Scanner Card -->
+  <a href="{{ url_for('main.image_search_page') }}" class="module-card module-card-scanner" id="module-scanner">
+    <div class="module-card-icon">📸</div>
+    <div class="module-card-content">
+      <h3>Medicine Scanner</h3>
+      <p>Take a photo of any medicine and instantly identify it with generic alternatives.</p>
     </div>
-
-    <!-- Quick Tools Card -->
-    <div class="dash-card quick-tools-card">
-      <h3 class="card-title">
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="title-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-        Smart Assistance Tools
-      </h3>
-      <div class="action-buttons">
-        <a href="{{ url_for('main.image_search_page') }}" class="action-btn">
-          <span class="btn-icon">📸</span>
-          <div class="btn-text">
-            <strong>Prescription Scanner</strong>
-            <span>Upload prescription image to extract</span>
-          </div>
-        </a>
-        <button class="action-btn" onclick="document.getElementById('chatbotToggle').click()">
-          <span class="btn-icon">💬</span>
-          <div class="btn-text">
-            <strong>AI Chat Assistant</strong>
-            <span>Get generic matching help</span>
-          </div>
-        </button>
-      </div>
-    </div>
-  </div>
+    <span class="module-card-arrow">→</span>
+  </a>
 </div>
 
-<!-- Educational / Information Section -->
-<div class="info-section">
-  <div class="info-card ja-scheme-card">
-    <div class="ja-card-header">
-      <span class="ja-tag">GOVT OF INDIA SCHEME</span>
-      <h3 class="ja-title">Jan Aushadhi Pariyojana</h3>
-    </div>
-    <p class="ja-desc">
-      PMBJP stores distribute high-quality, bioequivalent generic medicines at price discounts ranging from 50% to 90% compared to equivalent private branded products.
-    </p>
-    <a href="https://janaushadhi.gov.in" target="_blank" class="ja-link">Find Nearest Store →</a>
-  </div>
-  
-  <div class="info-card health-tip-card">
-    <span class="tip-tag">DID YOU KNOW?</span>
-    <h3 class="tip-title">Generic Safety & Efficacy</h3>
-    <p class="tip-desc">
-      Generic drugs are bioequivalent to brand-name counterparts, using identical chemical active ingredients. They go through the exact same testing and quality protocols as brand names.
-    </p>
+<!-- Recent Searches (minimal, only if user has history) -->
+{% if history %}
+<div class="recent-searches-strip">
+  <span class="recent-label">Recent:</span>
+  <div class="recent-chips">
+    {% for h in history %}
+    <a href="{{ url_for('search.search') }}?query={{ h.query | urlencode }}" class="history-chip history-chip--sm">
+      {{ h.query }}
+    </a>
+    {% endfor %}
   </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}

@@ -26,3 +26,5 @@ opencv-python
 pytesseract
 google-genai
 Pillow
+reportlab
+twilio

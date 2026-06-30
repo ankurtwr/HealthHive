@@ -52,10 +52,10 @@ def profile():
         ORDER BY um.created_at DESC
     """, (current_user.id,))
     
-    # Fetch prescriptions
+    # Fetch prescriptions (only saved ones)
     prescriptions = query_all("""
         SELECT * FROM user_prescriptions
-        WHERE user_id = %s
+        WHERE user_id = %s AND is_saved = 1
         ORDER BY created_at DESC
     """, (current_user.id,))
     
@@ -66,10 +66,18 @@ def profile():
         ORDER BY created_at DESC
     """, (current_user.id,))
     
+    # Fetch saved medical reports (Health Vault - only explicitly saved ones)
+    saved_reports = query_all("""
+        SELECT id, report_type, file_path, created_at FROM user_reports
+        WHERE user_id = %s AND is_saved = 1
+        ORDER BY created_at DESC
+    """, (current_user.id,))
+    
     return render_template('main/profile.html', 
                            saved_medicines=saved_medicines, 
                            prescriptions=prescriptions, 
-                           reminders=reminders)
+                           reminders=reminders,
+                           saved_reports=saved_reports)
 
 
 # ── Medicine Reminders ──────────────────────────────────────────────────
@@ -78,10 +86,7 @@ def profile():
 def add_reminder():
     medicine_name = request.form.get('medicine_name', '').strip()
     dosage = request.form.get('dosage', '').strip()
-    schedule_morning = 1 if request.form.get('schedule_morning') else 0
-    schedule_noon = 1 if request.form.get('schedule_noon') else 0
-    schedule_evening = 1 if request.form.get('schedule_evening') else 0
-    schedule_night = 1 if request.form.get('schedule_night') else 0
+    reminder_time = request.form.get('reminder_time', '08:00').strip()
     instructions = request.form.get('instructions', '').strip()
     
     if not medicine_name:
@@ -90,9 +95,9 @@ def add_reminder():
         
     execute("""
         INSERT INTO medicine_reminders 
-        (user_id, medicine_name, dosage, schedule_morning, schedule_noon, schedule_evening, schedule_night, instructions)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-    """, (current_user.id, medicine_name, dosage, schedule_morning, schedule_noon, schedule_evening, schedule_night, instructions))
+        (user_id, medicine_name, dosage, reminder_time, instructions)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (current_user.id, medicine_name, dosage, reminder_time, instructions))
     
     flash('Medicine reminder added successfully!', 'success')
     return redirect(url_for('main.profile'))
@@ -103,6 +108,15 @@ def add_reminder():
 def delete_reminder(reminder_id):
     execute("DELETE FROM medicine_reminders WHERE id = %s AND user_id = %s", (reminder_id, current_user.id))
     flash('Reminder deleted successfully.', 'success')
+    return redirect(url_for('main.profile'))
+
+
+@main_bp.route('/profile/phone/update', methods=['POST'])
+@login_required
+def update_phone():
+    phone_number = request.form.get('phone_number', '').strip()
+    execute("UPDATE users SET phone_number = %s WHERE id = %s", (phone_number or None, current_user.id))
+    flash('WhatsApp phone number updated successfully!', 'success')
     return redirect(url_for('main.profile'))
 
 
@@ -148,6 +162,7 @@ def upload_prescription():
         import subprocess
         from PIL import Image
         from google import genai
+        from google.genai import types
         
         try:
             api_key = os.getenv("GEMINI_API_KEY")
@@ -165,39 +180,97 @@ def upload_prescription():
             
             file.save(abs_file_path)
             
+            is_pdf = file.filename.lower().endswith('.pdf')
+            
             # Perform OCR extraction
             if api_key:
-                img = Image.open(abs_file_path)
                 client = genai.Client(api_key=api_key)
                 prompt = "Extract all text visible in this prescription, especially medicine names and directions. Return only the extracted text."
+                
+                if is_pdf:
+                    with open(abs_file_path, 'rb') as f:
+                        pdf_bytes = f.read()
+                    doc_input = types.Part.from_bytes(data=pdf_bytes, mime_type='application/pdf')
+                else:
+                    doc_input = Image.open(abs_file_path)
+
                 response = client.models.generate_content(
                     model='gemini-2.5-flash',
-                    contents=[img, prompt]
+                    contents=[doc_input, prompt]
                 )
                 extracted_text = response.text.strip()
             else:
-                scripts_dir = os.path.join(current_app.root_path, 'scripts')
-                ps_script = os.path.join(scripts_dir, 'ocr.ps1')
-                cmd = ["powershell", "-ExecutionPolicy", "Bypass", "-File", ps_script, "-ImagePath", abs_file_path]
-                result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-                if result.returncode == 0:
-                    for line in result.stdout.splitlines():
-                        if line.startswith("RECOGNIZED:"):
-                            extracted_text = line[len("RECOGNIZED:"):].strip()
-                            break
+                # Fallback to local OCR script (images only)
+                if not is_pdf:
+                    scripts_dir = os.path.join(current_app.root_path, 'scripts')
+                    ps_script = os.path.join(scripts_dir, 'ocr.ps1')
+                    cmd = ["powershell", "-ExecutionPolicy", "Bypass", "-File", ps_script, "-ImagePath", abs_file_path]
+                    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    if result.returncode == 0:
+                        for line in result.stdout.splitlines():
+                            if line.startswith("RECOGNIZED:"):
+                                extracted_text = line[len("RECOGNIZED:"):].strip()
+                                break
                             
             if not extracted_text:
-                extracted_text = "No readable text extracted from prescription image."
+                extracted_text = "No readable text extracted from prescription."
                 
-            # Insert record
+            # Insert record as explicitly saved (is_saved = 1)
             execute("""
-                INSERT INTO user_prescriptions (user_id, file_path, extracted_text)
-                VALUES (%s, %s, %s)
+                INSERT INTO user_prescriptions (user_id, file_path, extracted_text, is_saved)
+                VALUES (%s, %s, %s, 1)
             """, (current_user.id, file_path, extracted_text))
             
-            flash('Prescription uploaded and scanned successfully!', 'success')
+            flash('Prescription uploaded and saved to Health Vault successfully!', 'success')
             
         except Exception as e:
             flash(f"Error processing prescription: {e}", 'danger')
             
+    return redirect(url_for('main.profile'))
+
+
+# ── Health Vault: Delete Report ────────────────────────────────────────
+@main_bp.route('/profile/report/delete/<int:report_id>', methods=['POST'])
+@login_required
+def delete_report(report_id):
+    """Delete a saved medical report from the Health Vault."""
+    import os
+    
+    # Get file path before deleting
+    report = query_one("SELECT file_path FROM user_reports WHERE id = %s AND user_id = %s", 
+                       (report_id, current_user.id))
+    
+    if report and report.get('file_path'):
+        abs_path = os.path.join(current_app.root_path, report['file_path'])
+        if os.path.exists(abs_path):
+            try:
+                os.remove(abs_path)
+            except OSError:
+                pass
+    
+    execute("DELETE FROM user_reports WHERE id = %s AND user_id = %s", (report_id, current_user.id))
+    flash('Report deleted from Health Vault.', 'success')
+    return redirect(url_for('main.profile'))
+
+
+# ── Health Vault: Delete Prescription ──────────────────────────────────
+@main_bp.route('/profile/prescription/delete/<int:prescription_id>', methods=['POST'])
+@login_required
+def delete_prescription(prescription_id):
+    """Delete a saved prescription from the Health Vault."""
+    import os
+    
+    record = query_one("SELECT file_path FROM user_prescriptions WHERE id = %s AND user_id = %s",
+                       (prescription_id, current_user.id))
+    
+    if record and record.get('file_path'):
+        abs_path = os.path.join(current_app.root_path, record['file_path'])
+        if os.path.exists(abs_path):
+            try:
+                os.remove(abs_path)
+            except OSError:
+                pass
+    
+    execute("DELETE FROM user_prescriptions WHERE id = %s AND user_id = %s", (prescription_id, current_user.id))
+    flash('Prescription deleted from Health Vault.', 'success')
     return redirect(url_for('main.profile'))

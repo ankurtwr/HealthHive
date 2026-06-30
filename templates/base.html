@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>{% block title %}HealthHive{% endblock %}</title>
+  <meta name="description" content="HealthHive — Your digital health companion for medicine price comparison, medical report analysis, and health management."/>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,6 +22,17 @@
 </head>
 <body>
 
+  <!-- ── GUEST MODE BANNER ── -->
+  {% if is_guest %}
+  <div class="guest-banner" id="guestBanner">
+    <div class="guest-banner-content">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <span>You are in <strong>Guest Mode</strong>. Your data will be erased when you leave.</span>
+      <a href="{{ url_for('auth.register') }}" class="guest-banner-signup">Sign up to save your data →</a>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- ── NAVBAR  -->
   <nav class="navbar">
     <a href="{{ url_for('main.home') }}" class="nav-logo">Health<span>Hive</span></a>
@@ -29,9 +41,14 @@
       {% if current_user.is_authenticated %}
         <a href="{{ url_for('main.dashboard') }}" class="nav-link">Dashboard</a>
         <a href="{{ url_for('search.search') }}" class="nav-link">Search</a>
-        <a href="{{ url_for('main.image_search_page') }}" class="nav-link">Image Search</a>
-        <a href="{{ url_for('main.profile') }}" class="nav-user">👤 {{ current_user.username }}</a>
-        <a href="{{ url_for('auth.logout') }}" class="nav-btn-ghost">Logout</a>
+        <a href="{{ url_for('report.report_explainer_page') }}" class="nav-link">Report Analyser</a>
+        {% if is_guest %}
+          <span class="nav-user nav-user-guest">👤 Guest</span>
+          <a href="{{ url_for('auth.guest_exit') }}" class="nav-btn-ghost">Exit Guest</a>
+        {% else %}
+          <a href="{{ url_for('main.profile') }}" class="nav-user">👤 {{ current_user.username }}</a>
+          <a href="{{ url_for('auth.logout') }}" class="nav-btn-ghost">Logout</a>
+        {% endif %}
       {% else %}
         <a href="{{ url_for('auth.login') }}"    class="nav-link">Login</a>
         <a href="{{ url_for('auth.register') }}" class="nav-btn">Register</a>

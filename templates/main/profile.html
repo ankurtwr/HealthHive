@@ -4,13 +4,13 @@
 {% block content %}
 <div class="page-header">
   <div>
-    <h1 class="page-title">User Profile & Health Desk</h1>
-    <p class="page-sub">Manage your saved medicines, uploaded prescriptions, and schedule your medicine reminders.</p>
+    <h1 class="page-title">Your Health Vault</h1>
+    <p class="page-sub">Securely store and access your prescriptions, medical reports, saved medicines, and reminders — all in one place.</p>
   </div>
 </div>
 
 <div class="dashboard-grid">
-  <!-- Left Side: User Info, Prescriptions & Saved Medicines -->
+  <!-- Left Side: User Info, Health Vault Storage -->
   <div class="dashboard-col">
     <!-- User Info Card -->
     <div class="dash-card">
@@ -31,44 +31,51 @@
       </div>
     </div>
 
-    <!-- Saved Medicines Log -->
+    <!-- Saved Medical Reports (Health Vault) -->
     <div class="dash-card">
       <h3 class="card-title">
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="title-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-        Saved Medicines
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="title-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        📋 Saved Reports
       </h3>
-      {% if not saved_medicines %}
-        <p class="empty-state">No saved medicines yet. Search a medicine and click "Save to Profile" to add them here.</p>
+      {% if not saved_reports %}
+        <p class="empty-state">No saved reports yet. <a href="{{ url_for('report.report_explainer_page') }}">Analyze a report</a> to save it here.</p>
       {% else %}
-        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 5px;">
-          {% for m in saved_medicines %}
-            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg3); border: 1px solid var(--border2); padding: 10px 14px; border-radius: var(--radius);">
-              <div>
-                <a href="{{ url_for('search.search') }}?query={{ m.brand_name | urlencode }}" style="font-weight: 500; font-size: 0.95rem; color: var(--text);">{{ m.brand_name }}</a>
-                <div style="font-size: 0.78rem; color: var(--text3); margin-top: 2px;">{{ m.salt_composition }}</div>
+        <div class="vault-items-list">
+          {% for r in saved_reports %}
+            <div class="vault-item">
+              <div class="vault-item-info">
+                <div class="vault-item-type">{{ r.report_type or 'Medical Report' }}</div>
+                <div class="vault-item-date">{{ r.created_at }}</div>
               </div>
-              <form action="{{ url_for('main.remove_saved_medicine', save_id=m.save_id) }}" method="POST">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <button type="submit" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.82rem; font-weight: 500;">Remove</button>
-              </form>
+              <div class="vault-item-actions">
+                <a href="{{ url_for('report.report_explainer_page') }}?load={{ r.id }}" class="vault-action-btn vault-view">View</a>
+                <form action="{{ url_for('main.delete_report', report_id=r.id) }}" method="POST" style="display:inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <button type="submit" class="vault-action-btn vault-delete">Delete</button>
+                </form>
+              </div>
             </div>
           {% endfor %}
         </div>
       {% endif %}
     </div>
 
-    <!-- Prescriptions Scanner & Uploads -->
+    <!-- Saved Prescriptions -->
     <div class="dash-card">
       <h3 class="card-title">
         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="title-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-        Prescription Desk
+        💊 Saved Prescriptions
       </h3>
       
       <!-- Upload Form -->
       <form action="{{ url_for('main.upload_prescription') }}" method="POST" enctype="multipart/form-data" style="margin-bottom: 1rem;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-          <input type="file" name="file" accept="image/*" required style="font-size: 0.85rem; color: var(--text2); background: var(--bg3); border: 1px dashed var(--border2); padding: 12px; border-radius: var(--radius); width: 100%; cursor: pointer;"/>
+        <div class="prescription-upload-area">
+          <input type="file" name="file" accept="image/*,application/pdf" required class="prescription-file-input" id="prescriptionFile"/>
+          <label for="prescriptionFile" class="prescription-upload-label">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            <span>Choose prescription image or PDF</span>
+          </label>
           <button type="submit" class="btn-primary" style="padding: 8px 16px; font-size: 0.85rem;">Upload & OCR Scan</button>
         </div>
       </form>
@@ -76,18 +83,52 @@
       {% if not prescriptions %}
         <p class="empty-state">No uploaded prescriptions yet.</p>
       {% else %}
-        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 5px;">
+        <div class="vault-items-list">
           {% for p in prescriptions %}
-            <div style="background: var(--bg3); border: 1px solid var(--border2); padding: 14px; border-radius: var(--radius);">
-              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text3); margin-bottom: 8px;">
-                <span>Uploaded Prescription</span>
-                <span>{{ p.created_at }}</span>
+            <div class="vault-item vault-item-prescription">
+              <div class="vault-item-info">
+                <div class="vault-item-type">Prescription</div>
+                <div class="vault-item-date">{{ p.created_at }}</div>
+                {% if p.file_path %}
+                  <a href="/{{ p.file_path }}" target="_blank" class="vault-view-original">🖼️ View Image</a>
+                {% endif %}
               </div>
-              {% if p.file_path %}
-                <a href="/{{ p.file_path }}" target="_blank" style="font-size: 0.82rem; color: var(--info); display: inline-block; margin-bottom: 8px; font-weight: 500;">🖼️ View Original Image</a>
-              {% endif %}
-              <div style="font-size: 0.82rem; color: var(--text2); background: var(--bg); border: 1px solid var(--border); padding: 10px; border-radius: 6px; max-height: 100px; overflow-y: auto; white-space: pre-line; font-family: monospace;">
-                {{ p.extracted_text }}
+              <div class="vault-item-text">
+                {{ p.extracted_text[:150] }}{% if p.extracted_text|length > 150 %}...{% endif %}
+              </div>
+              <div class="vault-item-actions">
+                <form action="{{ url_for('main.delete_prescription', prescription_id=p.id) }}" method="POST" style="display:inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <button type="submit" class="vault-action-btn vault-delete">Delete</button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Saved Medicines Log -->
+    <div class="dash-card">
+      <h3 class="card-title">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="title-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+        ❤️ Saved Medicines
+      </h3>
+      {% if not saved_medicines %}
+        <p class="empty-state">No saved medicines yet. Search a medicine and click "Save to Profile" to add them here.</p>
+      {% else %}
+        <div class="vault-items-list">
+          {% for m in saved_medicines %}
+            <div class="vault-item">
+              <div class="vault-item-info">
+                <a href="{{ url_for('search.search') }}?query={{ m.brand_name | urlencode }}" class="vault-item-type">{{ m.brand_name }}</a>
+                <div class="vault-item-date">{{ m.salt_composition }}</div>
+              </div>
+              <div class="vault-item-actions">
+                <form action="{{ url_for('main.remove_saved_medicine', save_id=m.save_id) }}" method="POST" style="display:inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                  <button type="submit" class="vault-action-btn vault-delete">Remove</button>
+                </form>
               </div>
             </div>
           {% endfor %}
@@ -96,37 +137,36 @@
     </div>
   </div>
 
-  <!-- Right Side: Reminders Scheduler & Alerts -->
+  <!-- Right Side: Reminders -->
   <div class="dashboard-col">
     <!-- Active Reminders List -->
     <div class="dash-card">
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <h3 class="card-title">
           <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="title-icon"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-          Pill Reminders
+          🔔 Pill Reminders
         </h3>
         <button id="enable-notifications-btn" class="btn-ghost" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 12px; border-color: var(--accent-border); color: var(--accent); cursor: pointer;" onclick="requestNotificationPermission()">
           🔔 Enable Alerts
         </button>
       </div>
-      <p class="simulator-desc" style="margin-bottom: 0.5rem;">Create alerts to remind you when it's time to take your medicine.</p>
+      <p class="simulator-desc" style="margin-bottom: 0.5rem;">Schedule medicine reminders to never miss a dose.</p>
       
       {% if not reminders %}
-        <p class="empty-state">No pill reminders scheduled yet. Add a reminder using the form below.</p>
+        <p class="empty-state">No pill reminders yet. Add one below.</p>
       {% else %}
         <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 5px;" id="reminder-container">
           {% for r in reminders %}
-            <div class="reminder-card-item" data-id="{{ r.id }}" data-med="{{ r.medicine_name }}" data-dosage="{{ r.dosage }}" data-inst="{{ r.instructions }}" data-morning="{{ r.schedule_morning }}" data-noon="{{ r.schedule_noon }}" data-evening="{{ r.schedule_evening }}" data-night="{{ r.schedule_night }}" style="background: var(--bg3); border: 1px solid var(--border2); padding: 14px; border-radius: var(--radius); position: relative; border-left: 4px solid var(--accent);">
+            <div class="reminder-card-item" data-id="{{ r.id }}" data-med="{{ r.medicine_name }}" data-dosage="{{ r.dosage }}" data-inst="{{ r.instructions }}" data-time="{{ r.reminder_time }}" style="background: var(--bg3); border: 1px solid var(--border2); padding: 14px; border-radius: var(--radius); position: relative; border-left: 4px solid var(--accent);">
               <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
                   <strong style="color: var(--text); font-size: 1rem;">{{ r.medicine_name }}</strong>
                   <span style="font-size: 0.8rem; color: var(--text3); margin-left: 6px;">({{ r.dosage or 'No Dosage' }})</span>
                   
                   <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
-                    {% if r.schedule_morning %}<span class="source-badge" style="background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border);">Morning</span>{% endif %}
-                    {% if r.schedule_noon %}<span class="source-badge" style="background: var(--info-bg); color: var(--info); border: 1px solid rgba(96,165,250,0.3);">Noon</span>{% endif %}
-                    {% if r.schedule_evening %}<span class="source-badge" style="background: rgba(251,191,36,0.1); color: var(--warn); border: 1px solid rgba(251,191,36,0.3);">Evening</span>{% endif %}
-                    {% if r.schedule_night %}<span class="source-badge" style="background: rgba(139,92,246,0.1); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3);">Night</span>{% endif %}
+                    <span class="source-badge" style="background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border); font-weight: 500;">
+                      ⏰ Daily at {{ r.reminder_time }}
+                    </span>
                   </div>
                   
                   {% if r.instructions %}
@@ -147,56 +187,53 @@
       {% endif %}
     </div>
 
+    <!-- WhatsApp Offline Reminders Settings -->
+    <div class="dash-card">
+      <h3 class="card-title">📲 WhatsApp Offline Reminders</h3>
+      <p class="simulator-desc" style="margin-bottom: 0.85rem; line-height: 1.4;">
+        Since browser alerts won't reach you when the browser is closed, add your WhatsApp number below to get pill reminders sent straight to your phone.
+      </p>
+      <form action="{{ url_for('main.update_phone') }}" method="POST" autocomplete="off">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div style="display: flex; gap: 10px;">
+          <input type="text" name="phone_number" placeholder="e.g. +919876543210 (Include country code)" value="{{ current_user.phone_number or '' }}" class="field-input" style="padding: 8px 12px; font-size: 0.9rem; flex: 1;"/>
+          <button type="submit" class="btn-primary" style="padding: 8px 16px; font-size: 0.88rem; white-space: nowrap;">Update Phone</button>
+        </div>
+      </form>
+    </div>
+
     <!-- Add Reminder Form -->
     <div class="dash-card">
       <h3 class="card-title">Add Pill Reminder</h3>
       <form action="{{ url_for('main.add_reminder') }}" method="POST" autocomplete="off">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div style="display: flex; flex-direction: column; gap: 12px;">
-          <!-- Med Name -->
           <div>
             <label class="field-label" style="margin-bottom: 4px;">Medicine Name</label>
             <input type="text" name="medicine_name" placeholder="e.g. Dolo 650, Calpol" required class="field-input" style="padding: 8px 12px; font-size: 0.9rem;"/>
           </div>
-          
-          <!-- Dosage -->
           <div>
             <label class="field-label" style="margin-bottom: 4px;">Dosage</label>
             <input type="text" name="dosage" placeholder="e.g. 1 Tablet, 2 Spoon" class="field-input" style="padding: 8px 12px; font-size: 0.9rem;"/>
           </div>
-          
-          <!-- Schedule Pill Checkboxes -->
           <div>
-            <label class="field-label" style="margin-bottom: 6px;">Consumption Schedule</label>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-              <label class="demo-chip" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; justify-content: center;">
-                <input type="checkbox" name="schedule_morning" style="accent-color: var(--accent);"/>
-                <span>Morning</span>
-              </label>
-              <label class="demo-chip" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; justify-content: center;">
-                <input type="checkbox" name="schedule_noon" style="accent-color: var(--accent);"/>
-                <span>Noon</span>
-              </label>
-              <label class="demo-chip" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; justify-content: center;">
-                <input type="checkbox" name="schedule_evening" style="accent-color: var(--accent);"/>
-                <span>Evening</span>
-              </label>
-              <label class="demo-chip" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; justify-content: center;">
-                <input type="checkbox" name="schedule_night" style="accent-color: var(--accent);"/>
-                <span>Night</span>
-              </label>
-            </div>
+            <label class="field-label" style="margin-bottom: 4px;">Reminder Time (Custom)</label>
+            <input type="time" name="reminder_time" value="08:00" required class="field-input" style="padding: 8px 12px; font-size: 0.9rem; max-width: 160px;"/>
           </div>
-          
-          <!-- Instructions -->
           <div>
             <label class="field-label" style="margin-bottom: 4px;">Special Instructions</label>
             <input type="text" name="instructions" placeholder="e.g. After meals, before sleeping" class="field-input" style="padding: 8px 12px; font-size: 0.9rem;"/>
           </div>
-          
           <button type="submit" class="btn-primary" style="margin-top: 5px; padding: 10px;">Save Reminder</button>
         </div>
       </form>
+    </div>
+
+    <!-- Quick Link to Report Explainer -->
+    <div class="dash-card" style="text-align: center;">
+      <a href="{{ url_for('report.report_explainer_page') }}" class="btn-primary" style="display: inline-flex; align-items: center; gap: 8px;">
+        📋 Analyze a Medical Report
+      </a>
     </div>
   </div>
 </div>
@@ -217,8 +254,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   // Register checking loop
-  setInterval(checkReminders, 60000); // Check every minute
-  checkReminders(); // Run once initially
+  setInterval(checkReminders, 60000);
+  checkReminders();
 });
 
 function requestNotificationPermission() {
@@ -232,7 +269,7 @@ function requestNotificationPermission() {
       }
       new Notification("HealthHive Alerts Enabled!", {
         body: "We will notify you when it's time to take your scheduled medicines.",
-        icon: "/static/favicon.ico"
+        icon: "/static/favicon.png"
       });
     }
   });
@@ -242,46 +279,18 @@ function checkReminders() {
   if (Notification.permission !== 'granted') return;
   
   const now = new Date();
-  const hrs = now.getHours();
-  const mins = now.getMinutes();
+  const hrs = String(now.getHours()).padStart(2, '0');
+  const mins = String(now.getMinutes()).padStart(2, '0');
+  const currentTimeStr = `${hrs}:${mins}`; // e.g. "08:30"
   
-  // Define standard reminder times (adjust if you want custom ones):
-  // Morning: 08:00
-  // Noon: 13:00
-  // Evening: 18:00
-  // Night: 21:00
-  
-  let currentPeriod = null;
-  
-  if (hrs === 8 && mins === 0) currentPeriod = 'morning';
-  else if (hrs === 13 && mins === 0) currentPeriod = 'noon';
-  else if (hrs === 18 && mins === 0) currentPeriod = 'evening';
-  else if (hrs === 21 && mins === 0) currentPeriod = 'night';
-  
-  // MOCK FOR DEMONSTRATION OR TESTING:
-  // If the user loads the page, let's also trigger if they added something in the last minute.
-  // But for actual production, exact hour matching is standard.
-  
-  if (!currentPeriod) return; // Not a scheduled hour
-  
-  // Retrieve all elements representing reminders
   const cards = document.querySelectorAll('.reminder-card-item');
   cards.forEach(card => {
     const med = card.getAttribute('data-med');
     const dosage = card.getAttribute('data-dosage') || '';
     const inst = card.getAttribute('data-inst') || '';
-    const morning = card.getAttribute('data-morning') === '1';
-    const noon = card.getAttribute('data-noon') === '1';
-    const evening = card.getAttribute('data-evening') === '1';
-    const night = card.getAttribute('data-night') === '1';
+    const time = card.getAttribute('data-time'); // e.g. "08:30"
     
-    let isDue = false;
-    if (currentPeriod === 'morning' && morning) isDue = true;
-    else if (currentPeriod === 'noon' && noon) isDue = true;
-    else if (currentPeriod === 'evening' && evening) isDue = true;
-    else if (currentPeriod === 'night' && night) isDue = true;
-    
-    if (isDue) {
+    if (time === currentTimeStr) {
       new Notification(`Pill Reminder: ${med}`, {
         body: `Time to take ${dosage}. ${inst ? 'Instructions: ' + inst : ''}`,
         requireInteraction: true
