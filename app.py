@@ -85,11 +85,23 @@ def create_app():
 
 
 def start_reminder_daemon(app):
+    import socket
     import time
     import threading
     from datetime import datetime
     from db import query_all
     from routes.whatsapp_bot import send_whatsapp_message
+
+    # Socket-based lock to prevent duplicate runs across multi-worker environments (Gunicorn)
+    try:
+        # Bind to a local port. Only one process can bind to this port successfully.
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(('127.0.0.1', 5099))
+        # Keep reference to prevent socket close from garbage collection
+        app.config['_reminder_daemon_sock'] = sock
+    except socket.error:
+        # Port already in use; another worker process is already running the daemon.
+        return
 
     def run_loop():
         # Let the webserver start up first

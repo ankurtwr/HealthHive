@@ -15,6 +15,7 @@ class User(UserMixin):
         self.accepted_terms = kwargs.get('accepted_terms', 0)
         self.accepted_terms_at = kwargs.get('accepted_terms_at')
         self.is_guest      = kwargs.get('is_guest', 0)
+        self.phone_number  = kwargs.get('phone_number')
 
     def accept_terms(self):
         execute("UPDATE users SET accepted_terms = 1, accepted_terms_at = NOW() WHERE id = %s", (self.id,))
